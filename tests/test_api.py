@@ -73,6 +73,44 @@ def test_single_exercise_and_404(client):
     assert client.get("/v1/exercises/nope").status_code == 404
 
 
+def test_alternatives_share_the_movement_pattern(client):
+    """A substitute has to train the same thing, not merely a shared muscle."""
+    original = client.get("/v1/exercises/0043").json()  # barbell full squat
+    body = client.get("/v1/exercises/0043/alternatives").json()
+    assert body["alternatives"]
+    for alternative in body["alternatives"]:
+        assert alternative["pattern"] == original["pattern"]
+        assert alternative["mechanic"] == original["mechanic"]
+        assert alternative["id"] != "0043"
+
+
+def test_alternatives_prefer_different_equipment(client):
+    """A substitute on the same machine is no help when that machine is busy."""
+    original = client.get("/v1/exercises/0043").json()
+    body = client.get("/v1/exercises/0043/alternatives").json()
+    assert body["alternatives"][0]["equipment"] != original["equipment"]
+
+
+def test_alternatives_respect_the_equipment_profile(client):
+    body = client.get("/v1/exercises/0043/alternatives",
+                      params={"equipment_profile": "bodyweight"}).json()
+    assert body["alternatives"]
+    assert all(a["equipment"] == "body weight" for a in body["alternatives"])
+
+
+def test_alternatives_are_never_harder_than_the_original(client):
+    from engine.taxonomy import DIFFICULTY_RANK
+    original = client.get("/v1/exercises/0662").json()  # push-up, a beginner move
+    body = client.get("/v1/exercises/0662/alternatives").json()
+    for alternative in body["alternatives"]:
+        assert (DIFFICULTY_RANK[alternative["difficulty"]]
+                <= DIFFICULTY_RANK[original["difficulty"]])
+
+
+def test_alternatives_for_an_unknown_exercise_is_a_404(client):
+    assert client.get("/v1/exercises/999999/alternatives").status_code == 404
+
+
 def test_program_preview(client):
     """Preview is open to anyone — it is what makes the product demonstrable."""
     body = client.post("/v1/programs/preview", json={

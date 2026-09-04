@@ -30,7 +30,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.db import create_all
 from app.routers import accounts, programs, workouts
-from engine.catalog import get_catalog
+from engine.catalog import get_catalog, quality_score
 
 from .ratelimit import RateLimitMiddleware
 
@@ -159,6 +159,56 @@ def get_exercise(exercise_id: str, language: str = "en",
     if exercise is None:
         raise HTTPException(status_code=404, detail="exercise not found")
     return {"attribution": ATTRIBUTION, **_serialize(exercise, language)}
+
+
+@app.get("/v1/exercises/{exercise_id}/alternatives", tags=["catalog"])
+def alternatives(
+    exercise_id: str,
+    equipment_profile: str | None = None,
+    difficulty: str | None = None,
+    language: str = "en",
+    limit: int = Query(8, ge=1, le=50),
+    caller_tier: str = Depends(tier),
+) -> dict:
+    """Movements that can stand in for this one.
+
+    The rack is busy, the machine is taken, a joint is complaining — the
+    athlete needs a substitute now, and it has to train the same thing. The
+    movement taxonomy is what makes this answerable: same pattern and same
+    mechanic means the same job in the session, which a shared muscle name
+    does not.
+    """
+    catalog = get_catalog()
+    original = catalog.by_id.get(exercise_id)
+    if original is None:
+        raise HTTPException(status_code=404, detail="exercise not found")
+    try:
+        equipment = catalog.resolve_equipment(equipment_profile)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    candidates = catalog.find(
+        pattern=original["pattern"], mechanic=original["mechanic"],
+        equipment=equipment, exclude_ids={exercise_id},
+        max_difficulty=difficulty or original["difficulty"],
+    )
+    # Rank by: a different piece of equipment first, since a substitute on
+    # the same machine does not help when that machine is the problem; then
+    # the same role, so a main lift is replaced by a main lift; then how
+    # canonical the movement is.
+    candidates.sort(key=lambda e: (
+        e["equipment"] == original["equipment"],
+        e["role"] != original["role"],
+        -quality_score(e),
+    ))
+
+    return {
+        "exercise_id": exercise_id,
+        "pattern": original["pattern"],
+        "mechanic": original["mechanic"],
+        "attribution": ATTRIBUTION,
+        "alternatives": [_serialize(e, language) for e in candidates[:limit]],
+    }
 
 
 def _serialize(exercise: dict, language: str) -> dict:

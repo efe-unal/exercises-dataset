@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type {
+  Exercise,
   NextSession,
   PlanEntry,
   SavedPlan,
@@ -21,7 +22,9 @@ import { labelFor, useTranslation, type Translate } from '../lib/i18n';
 import { suggestionText } from '../lib/suggestion';
 import { logSession } from '../lib/offline';
 import { ExerciseMedia } from '../components/ExerciseMedia';
+import { RestTimer } from '../components/RestTimer';
 import { SetLogger, type LoggedSet } from '../components/SetLogger';
+import { SwapExercise } from '../components/SwapExercise';
 
 type Status = 'loading' | 'ready' | 'no-program' | 'complete' | 'error';
 
@@ -33,6 +36,9 @@ export function Today() {
     Extract<NextSession, { complete: false }> | null
   >(null);
   const [logged, setLogged] = useState<Record<string, LoggedSet[]>>({});
+  // A swap applies to today only — the saved plan is a snapshot, so what
+  // changes is what gets logged, not the program.
+  const [swapped, setSwapped] = useState<Record<string, Exercise>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -50,6 +56,7 @@ export function Today() {
       }
       setSession(next);
       setLogged({});
+      setSwapped({});
       setStatus('ready');
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
@@ -77,10 +84,11 @@ export function Today() {
     if (!session || !program) return;
     const sets: SetEntry[] = [];
     for (const entry of session.day.exercises) {
+      const performed = swapped[entry.exercise.id] ?? entry.exercise;
       for (const set of logged[entry.exercise.id] ?? []) {
         sets.push({
-          exercise_id: entry.exercise.id,
-          exercise_name: entry.exercise.name,
+          exercise_id: performed.id,
+          exercise_name: performed.name,
           set_index: set.index,
           reps: set.reps,
           weight_kg: set.weightKg,
@@ -179,6 +187,22 @@ export function Today() {
             key={entry.exercise.id}
             entry={entry}
             t={t}
+            language={program?.profile.language ?? 'en'}
+            equipmentProfile={
+              typeof program?.profile.equipment === 'string'
+                ? program.profile.equipment
+                : undefined
+            }
+            substitute={swapped[entry.exercise.id]}
+            onSubstitute={(exercise) =>
+              setSwapped((current) => {
+                if (exercise === null) {
+                  const { [entry.exercise.id]: _removed, ...rest } = current;
+                  return rest;
+                }
+                return { ...current, [entry.exercise.id]: exercise };
+              })
+            }
             sets={logged[entry.exercise.id] ?? []}
             onChange={(sets) =>
               setLogged((current) => ({ ...current, [entry.exercise.id]: sets }))
@@ -208,29 +232,45 @@ function ExerciseCard({
   sets,
   onChange,
   t,
+  language,
+  equipmentProfile,
+  substitute,
+  onSubstitute,
 }: {
   entry: PlanEntry;
   sets: LoggedSet[];
   onChange(sets: LoggedSet[]): void;
   t: Translate;
+  language: string;
+  equipmentProfile: string | undefined;
+  substitute: Exercise | undefined;
+  onSubstitute(exercise: Exercise | null): void;
 }) {
   const { prescription: rx, suggestion } = entry;
+  const [swapping, setSwapping] = useState(false);
+  const shown = substitute ?? entry.exercise;
+
   return (
     <li className="card">
       <div className="card-head">
-        <ExerciseMedia exercise={entry.exercise} />
+        <ExerciseMedia exercise={shown} />
         <div>
           <h3>
-            <Link to={`/exercises/${entry.exercise.id}`}>
-              {entry.exercise.name}
-            </Link>
+            <Link to={`/exercises/${shown.id}`}>{shown.name}</Link>
           </h3>
+          {substitute && (
+            <p className="muted small">
+              {t('swap.swapped')} · {entry.exercise.name}
+            </p>
+          )}
           <p className="muted">
             {labelFor(t, 'slot', entry.slot_key, entry.slot)} · {rx.sets} ×{' '}
             {rx.rep_min}–{rx.rep_max} · {t('today.rest')} {rx.rest_seconds}s ·{' '}
             {rx.rir} RIR
           </p>
-          {suggestion && (
+          {/* A suggested load belongs to the movement it was computed from;
+              after a swap it would be wrong, so it is withheld. */}
+          {suggestion && !substitute && (
             <p className="suggestion">
               {suggestion.weight_kg !== null && (
                 <strong>{suggestion.weight_kg} kg — </strong>
@@ -238,16 +278,38 @@ function ExerciseCard({
               {suggestionText(t, suggestion, entry.load_step_kg)}
             </p>
           )}
+          <button
+            type="button"
+            className="button subtle small"
+            onClick={() => setSwapping((current) => !current)}
+          >
+            {t('swap.button')}
+          </button>
         </div>
       </div>
 
+      {swapping && (
+        <SwapExercise
+          exerciseId={shown.id}
+          equipmentProfile={equipmentProfile}
+          language={language}
+          onSwap={(exercise) => {
+            onSubstitute(exercise);
+            setSwapping(false);
+          }}
+          onCancel={() => setSwapping(false)}
+        />
+      )}
+
       <SetLogger
         targetSets={rx.sets}
-        defaultWeightKg={suggestion?.weight_kg ?? null}
+        defaultWeightKg={substitute ? null : suggestion?.weight_kg ?? null}
         defaultReps={rx.rep_min}
         sets={sets}
         onChange={onChange}
       />
+
+      <RestTimer seconds={rx.rest_seconds} restartKey={sets.length} />
     </li>
   );
 }

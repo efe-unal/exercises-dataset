@@ -211,6 +211,17 @@ const en: Dictionary = {
     'This load has stalled for two sessions. Drop to {weight} kg and build back up.',
   'suggestion.bodyweight':
     'Bodyweight movement — add reps, then move to a harder variation.',
+
+  'rest.resting': 'rest remaining',
+  'rest.ready': 'rest is up',
+  'rest.dismiss': 'Dismiss',
+
+  'swap.button': 'Swap',
+  'swap.title': 'Swap for something else',
+  'swap.cancel': 'Cancel',
+  'swap.use': 'Use this',
+  'swap.none': 'No suitable alternative with this equipment.',
+  'swap.swapped': 'Swapped in for today',
 };
 
 const tr: Dictionary = {
@@ -408,6 +419,17 @@ const tr: Dictionary = {
     'Bu ağırlıkta iki seans takıldın. {weight} kg\'a düş ve yeniden çık.',
   'suggestion.bodyweight':
     'Vücut ağırlığı hareketi — tekrar ekle, sonra daha zor bir varyasyona geç.',
+
+  'rest.resting': 'dinlenme kaldı',
+  'rest.ready': 'dinlenme bitti',
+  'rest.dismiss': 'Kapat',
+
+  'swap.button': 'Değiştir',
+  'swap.title': 'Başka bir hareketle değiştir',
+  'swap.cancel': 'Vazgeç',
+  'swap.use': 'Bunu kullan',
+  'swap.none': 'Bu ekipmanla uygun bir alternatif yok.',
+  'swap.swapped': 'Bugünlük değiştirildi',
 };
 
 const DICTIONARIES: Record<string, Dictionary> = { en, tr };

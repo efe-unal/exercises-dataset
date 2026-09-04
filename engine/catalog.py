@@ -33,6 +33,36 @@ EQUIPMENT_PROFILES: dict[str, set[str]] = {
 }
 
 
+# Equipment ranked by how well it serves a main lift. Anything unlisted scores
+# 0, so a barbell bench press outranks an obscure machine variation.
+EQUIPMENT_SCORE = {
+    "barbell": 6, "olympic barbell": 6, "trap bar": 5, "dumbbell": 5,
+    "body weight": 4, "kettlebell": 4, "ez barbell": 4, "cable": 3,
+    "leverage machine": 3, "smith machine": 2, "weighted": 2, "band": 2,
+    "resistance band": 1, "assisted": 1,
+}
+
+# The dataset carries many near-duplicate variations; these markers flag the
+# ones that are variants of a canonical lift rather than the lift itself.
+VARIANT_MARKERS = ("v. 2", "v. 3", "v. 4", "(male)", "(female)", "version")
+
+
+def quality_score(exercise: dict) -> float:
+    """How canonical an exercise is, independent of any particular slot.
+
+    Used wherever a list of candidates has to be ranked for a human — filling
+    a program slot, or offering a substitute — so that "barbell squat" comes
+    ahead of "dumbbell biceps curl squat".
+    """
+    score = float(EQUIPMENT_SCORE.get(exercise["equipment"], 0))
+    name = exercise["name"].lower()
+    if any(marker in name for marker in VARIANT_MARKERS):
+        score -= 3
+    # Long names are almost always heavily-qualified variations.
+    score -= len(name.split()) * 0.5
+    return score
+
+
 class Catalog:
     """Queryable view over the annotated exercise dataset."""
 

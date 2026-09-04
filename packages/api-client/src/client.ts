@@ -250,6 +250,28 @@ export class ExercisesClient {
     });
   }
 
+  /** Movements that can stand in for this one when it is unavailable. */
+  alternatives(
+    exerciseId: string,
+    options: {
+      equipment_profile?: string;
+      difficulty?: string;
+      language?: string;
+      limit?: number;
+    } = {},
+  ): Promise<{
+    exercise_id: string;
+    pattern: string;
+    mechanic: string;
+    attribution: string;
+    alternatives: Exercise[];
+  }> {
+    return this.request(
+      `/v1/exercises/${encodeURIComponent(exerciseId)}/alternatives`,
+      { query: options },
+    );
+  }
+
   /** Absolute URL for a media path returned by the API. */
   mediaUrl(path: string): string {
     if (/^https?:\/\//.test(path)) return path;

@@ -126,7 +126,15 @@ generated plan is sane.
 | `GET /v1/facets` | free | Every filterable value; build a client UI from it. |
 | `GET /v1/exercises` | free | Filter, search and paginate; one language per response. |
 | `GET /v1/exercises/{id}` | free | A single exercise. |
+| `GET /v1/exercises/{id}/alternatives` | free | Substitutes that train the same movement. |
 | `POST /v1/programs` | pro | Generate a block. |
+
+The alternatives endpoint is where the taxonomy pays off twice. When the rack
+is busy or a joint complains, the athlete needs a substitute that does the same
+job in the session — same pattern, same mechanic. A shared muscle name does not
+guarantee that; a shared movement pattern does. Results prefer a different
+piece of equipment, since a substitute on the same machine is no help when
+that machine is the problem, and are never harder than the original.
 
 Tiering is configured with environment variables, so a deployment needs no
 database:
