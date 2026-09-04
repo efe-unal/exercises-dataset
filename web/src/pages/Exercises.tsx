@@ -6,12 +6,14 @@ import type { Exercise, Facets } from '@exercises/api-client';
 
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useTranslation } from '../lib/i18n';
 import { ExerciseMedia } from '../components/ExerciseMedia';
 
 const PAGE_SIZE = 24;
 
 export function Exercises() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const language = user?.language ?? 'en';
 
   const [facets, setFacets] = useState<Facets | null>(null);
@@ -73,22 +75,22 @@ export function Exercises() {
 
   return (
     <section>
-      <h2>Exercises</h2>
+      <h2>{t('exercises.title')}</h2>
 
       <div className="filters">
         <input
           type="search"
-          placeholder="Search by name…"
+          placeholder={t('exercises.search')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          aria-label="Search exercises"
+          aria-label={t('exercises.search')}
         />
         <select
           value={bodyPart}
           onChange={(event) => setBodyPart(event.target.value)}
           aria-label="Body part"
         >
-          <option value="">Any body part</option>
+          <option value="">{t('exercises.anyBodyPart')}</option>
           {facets?.body_part.map((value) => (
             <option key={value} value={value}>
               {value}
@@ -100,7 +102,7 @@ export function Exercises() {
           onChange={(event) => setEquipment(event.target.value)}
           aria-label="Equipment"
         >
-          <option value="">Any equipment</option>
+          <option value="">{t('exercises.anyEquipment')}</option>
           {facets?.equipment_profile.map((value) => (
             <option key={value} value={value}>
               {value.replace(/_/g, ' ')}
@@ -112,17 +114,17 @@ export function Exercises() {
           onChange={(event) => setDifficulty(event.target.value)}
           aria-label="Difficulty"
         >
-          <option value="">Any difficulty</option>
+          <option value="">{t('exercises.anyDifficulty')}</option>
           {facets?.difficulty.map((value) => (
             <option key={value} value={value}>
-              {value}
+              {t(`level.${value}`)}
             </option>
           ))}
         </select>
       </div>
 
       <p className="muted small">
-        {loading ? 'Searching…' : `${total} exercises`}
+        {loading ? t('exercises.searching') : t('exercises.count', { count: total })}
       </p>
 
       <ul className="exercise-grid">
@@ -146,7 +148,7 @@ export function Exercises() {
             disabled={offset === 0}
             onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
           >
-            Previous
+            {t('exercises.previous')}
           </button>
           <span className="muted small">
             {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
@@ -156,7 +158,7 @@ export function Exercises() {
             disabled={offset + PAGE_SIZE >= total}
             onClick={() => setOffset(offset + PAGE_SIZE)}
           >
-            Next
+            {t('exercises.next')}
           </button>
         </nav>
       )}

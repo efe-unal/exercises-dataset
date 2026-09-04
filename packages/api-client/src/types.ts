@@ -90,6 +90,8 @@ export interface Suggestion {
 
 export interface PlanEntry {
   slot: string;
+  /** Stable identifier for `slot`, so clients can supply their own wording. */
+  slot_key: string;
   exercise: Pick<
     Exercise,
     | 'id'
@@ -113,6 +115,8 @@ export interface PlanEntry {
 
 export interface PlanDay {
   name: string;
+  /** Stable identifier for `name`, so clients can supply their own wording. */
+  key: string;
   estimated_minutes: number;
   exercises: PlanEntry[];
 }
@@ -121,6 +125,8 @@ export interface PlanWeek {
   week: number;
   is_deload: boolean;
   guidance: string;
+  /** Stable identifier for `guidance`. */
+  guidance_key: string;
   days: PlanDay[];
   weekly_set_volume: Record<string, number>;
 }
@@ -237,6 +243,7 @@ export type NextSession =
       day_index: number;
       is_deload: boolean;
       guidance: string;
+      guidance_key: string;
       day: PlanDay;
       attribution: string;
     };

@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import type { Stats, WorkoutSession } from '@exercises/api-client';
 
 import { api } from '../lib/api';
+import { useTranslation } from '../lib/i18n';
 
 export function Progress() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,22 +22,28 @@ export function Progress() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="muted">Loading…</p>;
+  if (loading) return <p className="muted">{t('common.loading')}</p>;
 
   return (
     <section>
-      <h2>Progress</h2>
+      <h2>{t('progress.title')}</h2>
 
       {stats && (
         <ul className="stat-tiles">
-          <StatTile label="Sessions" value={stats.total_sessions} />
-          <StatTile label="Working sets" value={stats.total_working_sets} />
           <StatTile
-            label="Total volume"
+            label={t('progress.sessions')}
+            value={stats.total_sessions}
+          />
+          <StatTile
+            label={t('progress.workingSets')}
+            value={stats.total_working_sets}
+          />
+          <StatTile
+            label={t('progress.totalVolume')}
             value={`${Math.round(stats.total_volume_kg).toLocaleString()} kg`}
           />
           <StatTile
-            label="Last session"
+            label={t('progress.lastSession')}
             value={
               stats.last_session_at
                 ? new Date(stats.last_session_at).toLocaleDateString()
@@ -45,9 +53,9 @@ export function Progress() {
         </ul>
       )}
 
-      <h3>Recent sessions</h3>
+      <h3>{t('progress.recent')}</h3>
       {sessions.length === 0 ? (
-        <p className="muted">Nothing logged yet.</p>
+        <p className="muted">{t('progress.nothingLogged')}</p>
       ) : (
         <ul className="plain-list">
           {sessions.map((session) => {
@@ -61,9 +69,9 @@ export function Progress() {
                 <div>
                   <strong>{session.day_name}</strong>
                   <p className="muted small">
-                    Week {session.week} ·{' '}
+                    {t('common.week')} {session.week} ·{' '}
                     {new Date(session.started_at).toLocaleDateString()} ·{' '}
-                    {working.length} sets
+                    {working.length} {t('progress.sets')}
                     {volume > 0
                       ? ` · ${Math.round(volume).toLocaleString()} kg`
                       : ''}

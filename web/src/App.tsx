@@ -14,6 +14,7 @@ import {
 } from 'react-router-dom';
 
 import { useAuth } from './lib/auth';
+import { useTranslation } from './lib/i18n';
 import { onPendingChange, pendingCount, startAutoFlush } from './lib/offline';
 import { SignIn, SignUp } from './pages/Auth';
 import { ExerciseDetail } from './pages/ExerciseDetail';
@@ -26,19 +27,20 @@ import { Today } from './pages/Today';
 
 export function App() {
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <div className="app">
       <StatusBanners />
       <header className="app-header">
         <Link to="/" className="brand">
-          Training
+          {t('app.name')}
         </Link>
         {!loading && !user && (
           <nav className="auth-links">
-            <Link to="/sign-in">Sign in</Link>
+            <Link to="/sign-in">{t('auth.signIn')}</Link>
             <Link className="button primary" to="/sign-up">
-              Sign up
+              {t('auth.signUp')}
             </Link>
           </nav>
         )}
@@ -75,29 +77,32 @@ export function App() {
 
 /** Bottom tabs: thumb-reachable, which is where navigation belongs on a phone. */
 function TabBar() {
+  const { t } = useTranslation();
   return (
     <nav className="tab-bar" aria-label="Main">
       <NavLink to="/" end>
-        Today
+        {t('nav.today')}
       </NavLink>
-      <NavLink to="/programs">Programs</NavLink>
-      <NavLink to="/exercises">Exercises</NavLink>
-      <NavLink to="/progress">Progress</NavLink>
-      <NavLink to="/settings">Settings</NavLink>
+      <NavLink to="/programs">{t('nav.programs')}</NavLink>
+      <NavLink to="/exercises">{t('nav.exercises')}</NavLink>
+      <NavLink to="/progress">{t('nav.progress')}</NavLink>
+      <NavLink to="/settings">{t('nav.settings')}</NavLink>
     </nav>
   );
 }
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
 
-  if (loading) return <p className="muted">Loading…</p>;
+  if (loading) return <p className="muted">{t('common.loading')}</p>;
   if (!user) return <Navigate to="/sign-in" state={{ from: location }} replace />;
   return <>{children}</>;
 }
 
 function StatusBanners() {
+  const { t } = useTranslation();
   const [online, setOnline] = useState(
     typeof navigator === 'undefined' ? true : navigator.onLine,
   );
@@ -122,22 +127,19 @@ function StatusBanners() {
 
   return (
     <div className="status-banner" role="status">
-      {!online && <span>Offline — your sets are saved on this device.</span>}
-      {pending > 0 && (
-        <span>
-          {pending} session{pending === 1 ? '' : 's'} waiting to sync.
-        </span>
-      )}
+      {!online && <span>{t('offline.offline')}</span>}
+      {pending > 0 && <span>{t('offline.pending', { count: pending })}</span>}
     </div>
   );
 }
 
 function NotFound() {
+  const { t } = useTranslation();
   return (
     <section className="panel">
-      <h2>Not found</h2>
+      <h2>{t('common.notFound')}</h2>
       <Link className="button" to="/">
-        Go back
+        {t('common.back')}
       </Link>
     </section>
   );

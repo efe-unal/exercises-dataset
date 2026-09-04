@@ -12,12 +12,15 @@ import type { Exercise, ExerciseHistory, Suggestion } from '@exercises/api-clien
 
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useTranslation } from '../lib/i18n';
+import { suggestionText } from '../lib/suggestion';
 import { ExerciseMedia } from '../components/ExerciseMedia';
 import { OneRepMaxChart } from '../components/OneRepMaxChart';
 
 export function ExerciseDetail() {
   const { id = '' } = useParams();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const language = user?.language ?? 'en';
 
   const [exercise, setExercise] = useState<Exercise | null>(null);
@@ -58,7 +61,7 @@ export function ExerciseDetail() {
   }, [id, language, user]);
 
   if (error) return <p className="error">{error}</p>;
-  if (!exercise) return <p className="muted">Loading…</p>;
+  if (!exercise) return <p className="muted">{t('common.loading')}</p>;
 
   const workingSets = (history?.sets ?? []).filter((set) => !set.is_warmup);
 
@@ -81,18 +84,18 @@ export function ExerciseDetail() {
       {suggestion && (
         <p className="callout">
           <strong>
-            Next:{' '}
+            {t('exercises.nextLoad')}:{' '}
             {suggestion.weight_kg !== null
               ? `${suggestion.weight_kg} kg`
-              : 'bodyweight'}
+              : t('exercises.bodyweight')}
           </strong>{' '}
-          — {suggestion.reason}
+          — {suggestionText(t, suggestion, 2.5)}
         </p>
       )}
 
       {exercise.instruction_steps && exercise.instruction_steps.length > 0 && (
         <section>
-          <h3>How to do it</h3>
+          <h3>{t('exercises.howTo')}</h3>
           <ol className="steps">
             {exercise.instruction_steps.map((step, index) => (
               <li key={index}>{step}</li>
@@ -103,12 +106,9 @@ export function ExerciseDetail() {
 
       {user && (
         <section>
-          <h3>Your history</h3>
+          <h3>{t('exercises.yourHistory')}</h3>
           {workingSets.length === 0 ? (
-            <p className="muted">
-              Nothing logged yet. Once you train this movement, your progress
-              shows up here.
-            </p>
+            <p className="muted">{t('exercises.noHistory')}</p>
           ) : (
             <>
               <OneRepMaxChart sets={workingSets} />

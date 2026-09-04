@@ -7,6 +7,7 @@ degrades gracefully instead of failing when someone has no barbell.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -15,19 +16,36 @@ class Slot:
     patterns: tuple[str, ...]   # candidates, best first
     role: str                   # primary | accessory | mobility
     label: str                  # human-readable slot name
+    key: str                    # stable identifier for clients to translate
 
 
 @dataclass(frozen=True)
 class Day:
     name: str
     slots: tuple[Slot, ...]
+    key: str                    # stable identifier for clients to translate
+
+
+def _key(label: str) -> str:
+    """A stable, language-independent identifier derived from the label.
+
+    The label stays in the response as an English fallback; a client that
+    wants its own wording translates the key instead. Deriving it here keeps
+    the two from drifting apart.
+    """
+    return re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
 
 
 def _s(label, role, *patterns) -> Slot:
-    return Slot(patterns=tuple(patterns), role=role, label=label)
+    return Slot(patterns=tuple(patterns), role=role, label=label,
+                key=_key(label))
 
 
-FULL_BODY_A = Day("Full body A", (
+def _day(name: str, slots: tuple[Slot, ...]) -> Day:
+    return Day(name=name, slots=slots, key=_key(name))
+
+
+FULL_BODY_A = _day("Full body A", (
     _s("Squat pattern", "primary", "squat", "lunge"),
     _s("Horizontal push", "primary", "horizontal_push"),
     _s("Horizontal pull", "primary", "horizontal_pull", "vertical_pull"),
@@ -35,7 +53,7 @@ FULL_BODY_A = Day("Full body A", (
     _s("Core", "accessory", "core"),
 ))
 
-FULL_BODY_B = Day("Full body B", (
+FULL_BODY_B = _day("Full body B", (
     _s("Hip hinge", "primary", "hinge", "squat"),
     _s("Vertical push", "primary", "vertical_push", "horizontal_push"),
     _s("Vertical pull", "primary", "vertical_pull", "horizontal_pull"),
@@ -43,7 +61,7 @@ FULL_BODY_B = Day("Full body B", (
     _s("Core", "accessory", "core"),
 ))
 
-FULL_BODY_C = Day("Full body C", (
+FULL_BODY_C = _day("Full body C", (
     _s("Squat pattern", "primary", "squat"),
     _s("Horizontal push", "primary", "horizontal_push"),
     _s("Vertical pull", "primary", "vertical_pull", "horizontal_pull"),
@@ -52,7 +70,7 @@ FULL_BODY_C = Day("Full body C", (
     _s("Core", "accessory", "core"),
 ))
 
-UPPER = Day("Upper body", (
+UPPER = _day("Upper body", (
     _s("Horizontal push", "primary", "horizontal_push"),
     _s("Horizontal pull", "primary", "horizontal_pull"),
     _s("Vertical push", "primary", "vertical_push"),
@@ -62,7 +80,7 @@ UPPER = Day("Upper body", (
     _s("Elbow extension", "accessory", "elbow_extension"),
 ))
 
-LOWER = Day("Lower body", (
+LOWER = _day("Lower body", (
     _s("Squat pattern", "primary", "squat"),
     _s("Hip hinge", "primary", "hinge"),
     _s("Single-leg", "accessory", "lunge"),
@@ -71,7 +89,7 @@ LOWER = Day("Lower body", (
     _s("Core", "accessory", "core"),
 ))
 
-PUSH = Day("Push", (
+PUSH = _day("Push", (
     _s("Horizontal push", "primary", "horizontal_push"),
     _s("Vertical push", "primary", "vertical_push"),
     _s("Chest accessory", "accessory", "horizontal_push"),
@@ -80,7 +98,7 @@ PUSH = Day("Push", (
     _s("Core", "accessory", "core"),
 ))
 
-PULL = Day("Pull", (
+PULL = _day("Pull", (
     _s("Vertical pull", "primary", "vertical_pull"),
     _s("Horizontal pull", "primary", "horizontal_pull"),
     _s("Back accessory", "accessory", "horizontal_pull"),
@@ -89,7 +107,7 @@ PULL = Day("Pull", (
     _s("Grip / forearms", "accessory", "forearm"),
 ))
 
-LEGS = Day("Legs", (
+LEGS = _day("Legs", (
     _s("Squat pattern", "primary", "squat"),
     _s("Hip hinge", "primary", "hinge"),
     _s("Single-leg", "accessory", "lunge"),

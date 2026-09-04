@@ -113,18 +113,22 @@ def week_modifier(model: str, week: int, weeks: int) -> dict:
     is_deload = weeks >= 4 and week == weeks
     if is_deload:
         return {"set_delta": -1, "load_pct": 0.85, "rir_delta": 2,
+                "key": "deload",
                 "note": "Deload — cut volume, keep the movement pattern."}
 
     if model == "linear_load":
         return {"set_delta": 0, "load_pct": 1.0, "rir_delta": 0,
+                "key": "linear_load",
                 "note": "Add the smallest load step whenever every set hits "
                         "the top of the rep range."}
     if model == "double":
         return {"set_delta": 0, "load_pct": 1.0, "rir_delta": 0,
+                "key": "double",
                 "note": "Work reps up to the top of the range at the same "
                         "load, then add one load step and drop back to the "
                         "bottom of the range."}
     # volume_wave: add a set every week until the deload.
     return {"set_delta": week - 1, "load_pct": 1.0, "rir_delta": -min(week - 1, 2),
+            "key": "volume_wave",
             "note": "Volume ramps each week; effort rises as reps in reserve "
                     "fall toward the deload."}

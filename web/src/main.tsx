@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { App } from './App';
 import { AuthProvider } from './lib/auth';
+import { I18nProvider } from './lib/i18n';
 import './styles.css';
 
 const container = document.getElementById('root');
@@ -13,7 +14,9 @@ createRoot(container).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <I18nProvider>
+          <App />
+        </I18nProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

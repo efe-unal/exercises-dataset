@@ -5,8 +5,10 @@ import { Link } from 'react-router-dom';
 import type { ProgramSummary } from '@exercises/api-client';
 
 import { api } from '../lib/api';
+import { useTranslation } from '../lib/i18n';
 
 export function Programs() {
+  const { t } = useTranslation();
   const [programs, setPrograms] = useState<ProgramSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,47 +32,44 @@ export function Programs() {
   async function remove(id: string) {
     // Deleting a program takes its logged sessions with it, so this asks
     // first — the history is not recoverable.
-    if (!globalThis.confirm(
-      'Delete this program and everything logged against it?',
-    )) {
-      return;
-    }
+    if (!globalThis.confirm(t('programs.confirmDelete'))) return;
     await api.deleteProgram(id);
     await load();
   }
 
   if (error) return <p className="error">{error}</p>;
-  if (!programs) return <p className="muted">Loading…</p>;
+  if (!programs) return <p className="muted">{t('common.loading')}</p>;
 
   return (
     <section>
       <header className="page-header">
-        <h2>Your programs</h2>
+        <h2>{t('programs.title')}</h2>
         <Link className="button primary" to="/programs/new">
-          New program
+          {t('programs.new')}
         </Link>
       </header>
 
       {programs.length === 0 ? (
-        <p className="muted">
-          Nothing saved yet. Build a block and it will appear here.
-        </p>
+        <p className="muted">{t('programs.empty')}</p>
       ) : (
         <ul className="plain-list">
           {programs.map((program) => (
             <li key={program.id} className="card row">
               <div>
                 <strong>{program.name}</strong>
-                {program.is_active && <span className="badge">Active</span>}
+                {program.is_active && (
+                  <span className="badge">{t('programs.active')}</span>
+                )}
                 <p className="muted small">
-                  {program.goal.replace(/_/g, ' ')} · {program.level} ·{' '}
-                  {program.days_per_week} days/week · {program.weeks} weeks
+                  {t(`goal.${program.goal}`)} · {t(`level.${program.level}`)} ·{' '}
+                  {program.days_per_week} {t('programs.daysPerWeek')} ·{' '}
+                  {program.weeks} {t('builder.weeks')}
                 </p>
               </div>
               <div className="actions">
                 {!program.is_active && (
                   <button type="button" onClick={() => void activate(program.id)}>
-                    Make active
+                    {t('programs.makeActive')}
                   </button>
                 )}
                 <button
@@ -78,7 +77,7 @@ export function Programs() {
                   className="danger"
                   onClick={() => void remove(program.id)}
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
               </div>
             </li>

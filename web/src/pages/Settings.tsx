@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useTranslation } from '../lib/i18n';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -20,6 +21,7 @@ const LANGUAGES = [
 
 export function Settings() {
   const { user, signOut, refresh } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,14 +42,14 @@ export function Settings() {
 
   return (
     <section className="panel narrow">
-      <h2>Settings</h2>
+      <h2>{t('settings.title')}</h2>
       <p className="muted">
-        Signed in as {user.email}
+        {t('settings.signedInAs')}: {user.email}
         {user.tier === 'pro' ? ' · pro' : ''}
       </p>
 
       <label>
-        <span>Instruction language</span>
+        <span>{t('settings.language')}</span>
         <select
           value={user.language}
           onChange={(event) => void update({ language: event.target.value })}
@@ -61,7 +63,7 @@ export function Settings() {
       </label>
 
       <label>
-        <span>Units</span>
+        <span>{t('settings.units')}</span>
         <select
           value={user.unit_system}
           onChange={(event) =>
@@ -70,12 +72,12 @@ export function Settings() {
             })
           }
         >
-          <option value="metric">Metric (kg)</option>
-          <option value="imperial">Imperial (lb)</option>
+          <option value="metric">{t('settings.metric')}</option>
+          <option value="imperial">{t('settings.imperial')}</option>
         </select>
       </label>
 
-      {saved && <p className="callout">Saved.</p>}
+      {saved && <p className="callout">{t('common.saved')}</p>}
       {error && <p className="error">{error}</p>}
 
       <button
@@ -86,7 +88,7 @@ export function Settings() {
           navigate('/');
         }}
       >
-        Sign out
+        {t('auth.signOut')}
       </button>
     </section>
   );

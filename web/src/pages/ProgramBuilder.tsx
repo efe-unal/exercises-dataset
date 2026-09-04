@@ -19,31 +19,31 @@ import { ApiError } from '@exercises/api-client';
 
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useTranslation } from '../lib/i18n';
 import { PlanPreview } from '../components/PlanPreview';
 
-const GOALS: Array<{ value: Goal; label: string }> = [
-  { value: 'hypertrophy', label: 'Build muscle' },
-  { value: 'strength', label: 'Get stronger' },
-  { value: 'fat_loss', label: 'Lose fat' },
-  { value: 'endurance', label: 'Muscular endurance' },
-  { value: 'general_fitness', label: 'General fitness' },
+// Labels come from the translation dictionary, keyed by the API's own value,
+// so adding a goal never means touching this list twice.
+const GOALS: Goal[] = [
+  'hypertrophy',
+  'strength',
+  'fat_loss',
+  'endurance',
+  'general_fitness',
 ];
 
-const LEVELS: Array<{ value: Level; label: string; hint: string }> = [
-  { value: 'beginner', label: 'New to training', hint: 'Under a year of consistent lifting' },
-  { value: 'intermediate', label: 'Experienced', hint: 'One to three years' },
-  { value: 'advanced', label: 'Advanced', hint: 'Several years of structured training' },
-];
+const LEVELS: Level[] = ['beginner', 'intermediate', 'advanced'];
 
-const EQUIPMENT: Array<{ value: EquipmentProfile; label: string }> = [
-  { value: 'full_gym', label: 'Full gym' },
-  { value: 'home_dumbbell', label: 'Dumbbells at home' },
-  { value: 'home_minimal', label: 'Bands and a ball' },
-  { value: 'bodyweight', label: 'Bodyweight only' },
+const EQUIPMENT: EquipmentProfile[] = [
+  'full_gym',
+  'home_dumbbell',
+  'home_minimal',
+  'bodyweight',
 ];
 
 export function ProgramBuilder() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [request, setRequest] = useState<ProgramRequest>({
@@ -85,9 +85,7 @@ export function ProgramBuilder() {
       navigate('/');
     } catch (caught) {
       if (caught instanceof ApiError && caught.isPaymentRequired) {
-        setError(
-          'Free accounts keep one program at a time. Delete the old one, or upgrade to keep several.',
-        );
+        setError(t('builder.freeLimit'));
       } else if (caught instanceof ApiError && caught.isUnauthorized) {
         navigate('/sign-in');
       } else {
@@ -100,40 +98,40 @@ export function ProgramBuilder() {
 
   return (
     <section>
-      <h2>Build a program</h2>
+      <h2>{t('builder.title')}</h2>
 
       <form className="builder" onSubmit={preview}>
         <fieldset>
-          <legend>What are you training for?</legend>
+          <legend>{t('builder.goalQuestion')}</legend>
           <div className="options">
             {GOALS.map((goal) => (
-              <label key={goal.value} className="option">
+              <label key={goal} className="option">
                 <input
                   type="radio"
                   name="goal"
-                  checked={request.goal === goal.value}
-                  onChange={() => update('goal', goal.value)}
+                  checked={request.goal === goal}
+                  onChange={() => update('goal', goal)}
                 />
-                <span>{goal.label}</span>
+                <span>{t(`goal.${goal}`)}</span>
               </label>
             ))}
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>How much training have you done?</legend>
+          <legend>{t('builder.levelQuestion')}</legend>
           <div className="options">
             {LEVELS.map((level) => (
-              <label key={level.value} className="option">
+              <label key={level} className="option">
                 <input
                   type="radio"
                   name="level"
-                  checked={request.level === level.value}
-                  onChange={() => update('level', level.value)}
+                  checked={request.level === level}
+                  onChange={() => update('level', level)}
                 />
                 <span>
-                  {level.label}
-                  <small>{level.hint}</small>
+                  {t(`level.${level}`)}
+                  <small>{t(`level.${level}.hint`)}</small>
                 </span>
               </label>
             ))}
@@ -141,17 +139,17 @@ export function ProgramBuilder() {
         </fieldset>
 
         <fieldset>
-          <legend>What do you have to train with?</legend>
+          <legend>{t('builder.equipmentQuestion')}</legend>
           <div className="options">
             {EQUIPMENT.map((equipment) => (
-              <label key={equipment.value} className="option">
+              <label key={equipment} className="option">
                 <input
                   type="radio"
                   name="equipment"
-                  checked={request.equipment === equipment.value}
-                  onChange={() => update('equipment', equipment.value)}
+                  checked={request.equipment === equipment}
+                  onChange={() => update('equipment', equipment)}
                 />
-                <span>{equipment.label}</span>
+                <span>{t(`equipment.${equipment}`)}</span>
               </label>
             ))}
           </div>
@@ -159,7 +157,9 @@ export function ProgramBuilder() {
 
         <div className="sliders">
           <label>
-            <span>Days per week: {request.days_per_week}</span>
+            <span>
+              {t('builder.daysPerWeek')}: {request.days_per_week}
+            </span>
             <input
               type="range"
               min={2}
@@ -171,7 +171,9 @@ export function ProgramBuilder() {
             />
           </label>
           <label>
-            <span>Minutes per session: {request.session_minutes}</span>
+            <span>
+              {t('builder.sessionMinutes')}: {request.session_minutes}
+            </span>
             <input
               type="range"
               min={20}
@@ -184,7 +186,9 @@ export function ProgramBuilder() {
             />
           </label>
           <label>
-            <span>Block length: {request.weeks} weeks</span>
+            <span>
+              {t('builder.blockLength')}: {request.weeks} {t('builder.weeks')}
+            </span>
             <input
               type="range"
               min={1}
@@ -196,7 +200,7 @@ export function ProgramBuilder() {
         </div>
 
         <button type="submit" className="button primary wide" disabled={busy}>
-          {busy ? 'Working…' : 'Show me the program'}
+          {busy ? t('common.working') : t('builder.generate')}
         </button>
       </form>
 
@@ -212,12 +216,12 @@ export function ProgramBuilder() {
               onClick={() => void save()}
               disabled={busy}
             >
-              Save and start this block
+              {t('builder.save')}
             </button>
           ) : (
             <p className="callout">
-              Create an account to save this block and log your sessions —{' '}
-              <a href="/sign-up">sign up</a>.
+              {t('builder.signUpPrompt')} —{' '}
+              <a href="/sign-up">{t('auth.signUp').toLowerCase()}</a>.
             </p>
           )}
         </>

@@ -9,6 +9,8 @@
 
 import { useId, useMemo, useState } from 'react';
 
+import { useTranslation } from '../lib/i18n';
+
 interface HistorySet {
   performed_at: string;
   reps: number;
@@ -28,6 +30,7 @@ const HEIGHT = 220;
 const PADDING = { top: 16, right: 16, bottom: 28, left: 44 };
 
 export function OneRepMaxChart({ sets }: { sets: HistorySet[] }) {
+  const { t } = useTranslation();
   const titleId = useId();
   const [hovered, setHovered] = useState<Point | null>(null);
   const [showTable, setShowTable] = useState(false);
@@ -36,9 +39,7 @@ export function OneRepMaxChart({ sets }: { sets: HistorySet[] }) {
 
   if (points.length < 2) {
     return (
-      <p className="muted small">
-        Two or more logged sessions are needed before a trend is worth drawing.
-      </p>
+      <p className="muted small">{t('chart.needMore')}</p>
     );
   }
 
@@ -152,21 +153,18 @@ export function OneRepMaxChart({ sets }: { sets: HistorySet[] }) {
       <figcaption>
         {hovered ? (
           <span>
-            <strong>{hovered.value} kg</strong> estimated ·{' '}
+            <strong>{hovered.value} kg</strong> {t('chart.estimatedShort')} ·{' '}
             {hovered.date.toLocaleDateString()}
           </span>
         ) : (
-          <span className="muted small">
-            Estimated one-rep max — load and reps folded into one comparable
-            number.
-          </span>
+          <span className="muted small">{t('chart.caption')}</span>
         )}
         <button
           type="button"
           className="button subtle small"
           onClick={() => setShowTable((current) => !current)}
         >
-          {showTable ? 'Hide table' : 'View as table'}
+          {showTable ? t('chart.hideTable') : t('chart.viewTable')}
         </button>
       </figcaption>
 
@@ -177,8 +175,8 @@ export function OneRepMaxChart({ sets }: { sets: HistorySet[] }) {
           </caption>
           <thead>
             <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Estimated 1RM (kg)</th>
+              <th scope="col">{t('chart.date')}</th>
+              <th scope="col">{t('chart.estimated1rm')}</th>
             </tr>
           </thead>
           <tbody>

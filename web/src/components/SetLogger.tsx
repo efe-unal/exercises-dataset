@@ -8,6 +8,8 @@
 
 import { useState } from 'react';
 
+import { useTranslation } from '../lib/i18n';
+
 export interface LoggedSet {
   index: number;
   reps: number;
@@ -31,6 +33,7 @@ export function SetLogger({
   sets,
   onChange,
 }: Props) {
+  const { t } = useTranslation();
   const [weight, setWeight] = useState<string>(
     defaultWeightKg !== null ? String(defaultWeightKg) : '',
   );
@@ -71,7 +74,7 @@ export function SetLogger({
           {sets.map((set) => (
             <li key={set.index}>
               <span>
-                {set.isWarmup ? 'W' : set.index}. {set.reps} reps
+                {set.isWarmup ? '~' : set.index}. {set.reps} {t('sets.reps')}
                 {set.weightKg !== null ? ` × ${set.weightKg} kg` : ''}
               </span>
               <button
@@ -88,7 +91,7 @@ export function SetLogger({
 
       <div className="set-inputs">
         <label>
-          <span>kg</span>
+          <span>{t('sets.kg')}</span>
           <input
             type="number"
             inputMode="decimal"
@@ -100,7 +103,7 @@ export function SetLogger({
           />
         </label>
         <label>
-          <span>reps</span>
+          <span>{t('sets.reps')}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -111,20 +114,22 @@ export function SetLogger({
           />
         </label>
         <button type="button" className="button" onClick={() => addSet(false)}>
-          Add set
+          {t('sets.addSet')}
         </button>
         <button
           type="button"
           className="button subtle"
           onClick={() => addSet(true)}
         >
-          Warmup
+          {t('sets.warmup')}
         </button>
       </div>
 
       <p className="muted small">
-        {sets.filter((set) => !set.isWarmup).length} of {targetSets} working
-        sets logged
+        {t('sets.progress', {
+          done: sets.filter((set) => !set.isWarmup).length,
+          total: targetSets,
+        })}
       </p>
     </div>
   );

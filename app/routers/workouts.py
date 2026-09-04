@@ -150,7 +150,11 @@ def next_session(program_id: str, session: Session = Depends(get_session),
         "day_index": day_index,
         "is_deload": week["is_deload"],
         "guidance": week["guidance"],
+        # Plans saved before the keys existed have none; the English label
+        # still ships, so a client falls back to it rather than breaking.
+        "guidance_key": week.get("guidance_key", ""),
         "day": {"name": day["name"],
+                "key": day.get("key", ""),
                 "estimated_minutes": day["estimated_minutes"],
                 "exercises": exercises},
         "attribution": plan["attribution"],

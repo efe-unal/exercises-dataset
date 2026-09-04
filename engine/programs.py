@@ -146,6 +146,7 @@ def _entry(slot: Slot, exercise: dict, rx, profile: Profile) -> dict:
     """One line of a session: what to do, how to do it, how much."""
     return {
         "slot": slot.label,
+        "slot_key": slot.key,
         "exercise": {
             "id": exercise["id"],
             "name": exercise["name"],
@@ -190,7 +191,7 @@ def _build_day(catalog: Catalog, day: Day, profile: Profile, equipment,
         used.add(exercise["id"])
         entries.append(_entry(slot, exercise, rx, profile))
     _top_up(catalog, day, profile, equipment, used, rng, entries)
-    return {"name": day.name, "exercises": entries,
+    return {"name": day.name, "key": day.key, "exercises": entries,
             "estimated_minutes": _estimate_minutes(entries)}
 
 
@@ -213,7 +214,8 @@ def _top_up(catalog: Catalog, day: Day, profile: Profile, equipment,
         if len(entries) >= cap:
             return
         filler = Slot(patterns=(pattern,), role="accessory",
-                      label=f"Accessory — {pattern.replace('_', ' ')}")
+                      label=f"Accessory — {pattern.replace('_', ' ')}",
+                      key=f"accessory_{pattern}")
         exercise = _pick(catalog, filler, equipment, used, rng, exclude,
                          profile.level)
         if exercise is None or exercise["id"] in used:
@@ -284,6 +286,7 @@ def generate(profile: Profile, catalog: Catalog | None = None) -> dict:
             "week": week,
             "is_deload": modifier["load_pct"] < 1.0,
             "guidance": modifier["note"],
+            "guidance_key": modifier["key"],
             "days": week_days,
             "weekly_set_volume": weekly_set_volume(week_days),
         })

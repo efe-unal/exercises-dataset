@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../lib/auth';
+import { useTranslation } from '../lib/i18n';
 
 export function SignIn() {
   return <AuthForm mode="sign-in" />;
@@ -15,6 +16,7 @@ export function SignUp() {
 
 function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const { signIn, signUp } = useAuth();
+  const { t, language } = useTranslation();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -35,6 +37,10 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           email,
           password,
           display_name: displayName.trim() || undefined,
+          // Someone signing up from a Turkish browser gets a Turkish
+          // account; without this the new account defaults to English and
+          // the interface flips language the moment they register.
+          language,
         });
       } else {
         await signIn(email, password);
@@ -49,12 +55,12 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
 
   return (
     <section className="panel narrow">
-      <h2>{isSignUp ? 'Create an account' : 'Sign in'}</h2>
+      <h2>{isSignUp ? t('auth.createAccount') : t('auth.signIn')}</h2>
 
       <form onSubmit={submit}>
         {isSignUp && (
           <label>
-            <span>Name (optional)</span>
+            <span>{t('auth.nameOptional')}</span>
             <input
               type="text"
               autoComplete="name"
@@ -65,7 +71,7 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         )}
 
         <label>
-          <span>Email</span>
+          <span>{t('auth.email')}</span>
           <input
             type="email"
             required
@@ -76,7 +82,7 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </label>
 
         <label>
-          <span>Password</span>
+          <span>{t('auth.password')}</span>
           <input
             type="password"
             required
@@ -85,24 +91,24 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          {isSignUp && <small className="muted">At least 8 characters.</small>}
+          {isSignUp && <small className="muted">{t('auth.passwordHint')}</small>}
         </label>
 
         {error && <p className="error">{error}</p>}
 
         <button type="submit" className="button primary wide" disabled={busy}>
-          {busy ? 'Working…' : isSignUp ? 'Create account' : 'Sign in'}
+          {busy ? t('common.working') : isSignUp ? t('auth.createAccountButton') : t('auth.signIn')}
         </button>
       </form>
 
       <p className="muted">
         {isSignUp ? (
           <>
-            Already have an account? <Link to="/sign-in">Sign in</Link>.
+            {t('auth.haveAccount')} <Link to="/sign-in">{t('auth.signIn')}</Link>.
           </>
         ) : (
           <>
-            No account yet? <Link to="/sign-up">Create one</Link>.
+            {t('auth.noAccount')} <Link to="/sign-up">{t('auth.createOne')}</Link>.
           </>
         )}
       </p>

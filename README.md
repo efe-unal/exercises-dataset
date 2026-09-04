@@ -43,6 +43,7 @@
 - [Overview](#-overview)
 - [Interactive Browser & Developer Setup](#-interactive-browser--developer-setup)
 - [Program Engine](#-program-engine)
+- [App & API](#-app--api)
 - [File Structure](#-file-structure)
 - [Statistics](#-statistics)
 - [Data Schema](#-data-schema)
@@ -131,6 +132,45 @@ the API as filters in their own right.
 
 Full design notes, the API reference and the tier configuration are in
 [`docs/PROGRAM_ENGINE.md`](docs/PROGRAM_ENGINE.md).
+
+---
+
+## 📱 App & API
+
+On top of the engine sits a complete application: accounts, saved programs,
+workout logging, and progression that reads what you actually lifted rather
+than a fixed schedule.
+
+```bash
+pip install -r requirements.txt && npm install
+uvicorn api.main:app --reload   # the API,  http://127.0.0.1:8000/docs
+npm run dev                     # the app,  http://127.0.0.1:5173
+```
+
+**[`app/`](app/) — the stateful backend.** Email/password accounts (scrypt
+hashes; only a token's hash is ever stored), saved program snapshots, a
+set-by-set workout log, and `progression.py`, which turns that log into the
+next session's load by double progression: add a step once every set reaches
+the top of the rep range, hold inside the range, and cut ten per cent only
+after two sessions stall below the bottom.
+
+**[`api/`](api/) — one HTTP surface, two audiences.** The catalog
+(`/v1/exercises`, `/v1/facets`, `/v1/programs/preview`) is stateless and
+API-key gated — the developer-facing product, and the reason a visitor can see
+a real generated program before signing up. Accounts, programs and logging sit
+behind a bearer token.
+
+**[`packages/api-client/`](packages/api-client/) — the typed client.** Plain
+`fetch` and an injected token store, no framework or platform assumptions, so
+the same file serves the web app, Node, and a future React Native app.
+
+**[`web/`](web/) — an installable PWA.** Works offline: the service worker
+caches the shell and the exercise media but never anything account-specific,
+and logged sessions queue locally and sync when the connection returns. The
+interface is translated (English and Turkish so far) and follows the account's
+language preference across devices.
+
+Running it and deploying it: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ---
 

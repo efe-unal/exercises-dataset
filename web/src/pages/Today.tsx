@@ -17,6 +17,8 @@ import type {
 import { ApiError } from '@exercises/api-client';
 
 import { api } from '../lib/api';
+import { labelFor, useTranslation, type Translate } from '../lib/i18n';
+import { suggestionText } from '../lib/suggestion';
 import { logSession } from '../lib/offline';
 import { ExerciseMedia } from '../components/ExerciseMedia';
 import { SetLogger, type LoggedSet } from '../components/SetLogger';
@@ -24,6 +26,7 @@ import { SetLogger, type LoggedSet } from '../components/SetLogger';
 type Status = 'loading' | 'ready' | 'no-program' | 'complete' | 'error';
 
 export function Today() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<Status>('loading');
   const [program, setProgram] = useState<SavedPlan | null>(null);
   const [session, setSession] = useState<
@@ -87,7 +90,7 @@ export function Today() {
       }
     }
     if (sets.length === 0) {
-      setMessage('Log at least one set before finishing.');
+      setMessage(t('today.needOneSet'));
       return;
     }
 
@@ -101,11 +104,7 @@ export function Today() {
         day_name: session.day.name,
         sets,
       });
-      setMessage(
-        saved
-          ? 'Session saved.'
-          : 'No connection — the session is saved on this device and will sync automatically.',
-      );
+      setMessage(saved ? t('today.sessionSaved') : t('today.savedOffline'));
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
@@ -114,18 +113,15 @@ export function Today() {
     }
   }
 
-  if (status === 'loading') return <p className="muted">Loading…</p>;
+  if (status === 'loading') return <p className="muted">{t('common.loading')}</p>;
 
   if (status === 'no-program') {
     return (
       <section className="panel">
-        <h2>No active program</h2>
-        <p className="muted">
-          Generate a block and save it, and it will show up here session by
-          session.
-        </p>
+        <h2>{t('today.noProgramTitle')}</h2>
+        <p className="muted">{t('today.noProgramBody')}</p>
         <Link className="button" to="/programs/new">
-          Build a program
+          {t('today.buildProgram')}
         </Link>
       </section>
     );
@@ -134,13 +130,10 @@ export function Today() {
   if (status === 'complete') {
     return (
       <section className="panel">
-        <h2>Block complete</h2>
-        <p className="muted">
-          Every session in {program?.name} is logged. Generate the next block
-          when you are ready.
-        </p>
+        <h2>{t('today.completeTitle')}</h2>
+        <p className="muted">{t('today.completeBody')}</p>
         <Link className="button" to="/programs/new">
-          Build the next block
+          {t('today.buildNext')}
         </Link>
       </section>
     );
@@ -149,10 +142,10 @@ export function Today() {
   if (status === 'error' || !session) {
     return (
       <section className="panel">
-        <h2>Could not load today's session</h2>
+        <h2>{t('today.errorTitle')}</h2>
         <p className="error">{message}</p>
         <button type="button" onClick={() => void load()}>
-          Try again
+          {t('common.retry')}
         </button>
       </section>
     );
@@ -162,24 +155,30 @@ export function Today() {
     <section>
       <header className="page-header">
         <div>
-          <h2>{session.day.name}</h2>
+          <h2>{labelFor(t, 'day', session.day.key, session.day.name)}</h2>
           <p className="muted">
-            Week {session.week} · about {session.day.estimated_minutes} min
-            {session.is_deload ? ' · deload week' : ''}
+            {t('common.week')} {session.week} · ~{session.day.estimated_minutes}{' '}
+            {t('common.min')}
+            {session.is_deload ? ` · ${t('today.deloadWeek')}` : ''}
           </p>
         </div>
         <span className="counter">
-          {entriesWithSets}/{session.day.exercises.length} logged
+          {entriesWithSets}/{session.day.exercises.length} {t('today.logged')}
         </span>
       </header>
 
-      {session.is_deload && <p className="callout">{session.guidance}</p>}
+      {session.is_deload && (
+        <p className="callout">
+          {labelFor(t, 'guidance', session.guidance_key, session.guidance)}
+        </p>
+      )}
 
       <ol className="exercise-list">
         {session.day.exercises.map((entry) => (
           <ExerciseCard
             key={entry.exercise.id}
             entry={entry}
+            t={t}
             sets={logged[entry.exercise.id] ?? []}
             onChange={(sets) =>
               setLogged((current) => ({ ...current, [entry.exercise.id]: sets }))
@@ -196,7 +195,7 @@ export function Today() {
         onClick={() => void finish()}
         disabled={saving}
       >
-        {saving ? 'Saving…' : 'Finish session'}
+        {saving ? t('today.saving') : t('today.finish')}
       </button>
 
       <p className="attribution">{session.attribution}</p>
@@ -208,10 +207,12 @@ function ExerciseCard({
   entry,
   sets,
   onChange,
+  t,
 }: {
   entry: PlanEntry;
   sets: LoggedSet[];
   onChange(sets: LoggedSet[]): void;
+  t: Translate;
 }) {
   const { prescription: rx, suggestion } = entry;
   return (
@@ -225,15 +226,16 @@ function ExerciseCard({
             </Link>
           </h3>
           <p className="muted">
-            {entry.slot} · {rx.sets} × {rx.rep_min}–{rx.rep_max} · rest{' '}
-            {rx.rest_seconds}s · {rx.rir} RIR
+            {labelFor(t, 'slot', entry.slot_key, entry.slot)} · {rx.sets} ×{' '}
+            {rx.rep_min}–{rx.rep_max} · {t('today.rest')} {rx.rest_seconds}s ·{' '}
+            {rx.rir} RIR
           </p>
           {suggestion && (
             <p className="suggestion">
               {suggestion.weight_kg !== null && (
                 <strong>{suggestion.weight_kg} kg — </strong>
               )}
-              {suggestion.reason}
+              {suggestionText(t, suggestion, entry.load_step_kg)}
             </p>
           )}
         </div>
