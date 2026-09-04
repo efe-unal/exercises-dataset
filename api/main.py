@@ -1,42 +1,82 @@
-"""HTTP API over the exercise catalog and the program engine.
+"""HTTP API: the exercise catalog, the program engine, and the app backend.
 
 Run locally:
 
     pip install -r requirements.txt
-    uvicorn api.main:app --reload
+    uvicorn api.main:app --reload      # docs at http://127.0.0.1:8000/docs
 
-Every response that carries media paths also carries the Gym visual
-attribution required by ``NOTICE.md``; clients must keep it visible.
+The surface splits in two:
+
+* **Catalog** (``/v1/exercises``, ``/v1/facets``, ``/v1/programs/preview``) —
+  stateless, optionally gated by an API key. This is the developer-facing
+  product.
+* **App backend** (``/v1/auth``, ``/v1/programs``, ``/v1/workouts``) — accounts,
+  saved programs and workout logging, authenticated with a bearer token. This
+  is what the web and mobile clients talk to.
+
+Every response carrying media paths also carries the Gym visual attribution
+required by ``NOTICE.md``; clients must keep it visible.
 """
 
 from __future__ import annotations
 
 import os
-from typing import Literal
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from fastapi.staticfiles import StaticFiles
 
-from engine.catalog import EQUIPMENT_PROFILES, get_catalog
-from engine.prescription import GOALS, LEVELS
-from engine.programs import Profile, generate
+from app.db import create_all
+from app.routers import accounts, programs, workouts
+from engine.catalog import get_catalog
+
+from .ratelimit import RateLimitMiddleware
 
 ATTRIBUTION = "© Gym visual — https://gymvisual.com/"
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    create_all()
+    get_catalog()  # warm the catalog so the first request is not slow
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Exercises API",
-    version="1.0.0",
+    version="2.0.0",
     description=(
-        "1,324 exercises with media and 9-language instructions, plus a "
-        "training-program generator. Media " + ATTRIBUTION
+        "1,324 exercises with media and 9-language instructions, a training-"
+        "program generator, and the account, program and workout-logging "
+        "backend behind the web and mobile clients. Media " + ATTRIBUTION
     ),
 )
 
 
-# --- tiering ----------------------------------------------------------
-# Keys are read from the environment so the free tier works out of the box
-# and a deployment can gate the program endpoint without a database:
+# --- middleware -------------------------------------------------------
+# The web client and the installed PWA are served from a different origin than
+# the API, so browsers need explicit permission. Set ALLOWED_ORIGINS to the
+# real front-end origins in production; the default is permissive for local
+# development only.
+_origins = os.environ.get("ALLOWED_ORIGINS", "*")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if _origins == "*" else
+                  [o.strip() for o in _origins.split(",") if o.strip()],
+    allow_credentials=_origins != "*",
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(RateLimitMiddleware)
+
+
+# --- API-key tiering for the catalog ----------------------------------
+# Keys come from the environment so a deployment needs no database:
 #   EXERCISES_API_KEYS="key1:pro,key2:free"
 def _load_keys() -> dict[str, str]:
     raw = os.environ.get("EXERCISES_API_KEYS", "").strip()
@@ -44,8 +84,8 @@ def _load_keys() -> dict[str, str]:
     for item in raw.split(","):
         if not item.strip():
             continue
-        key, _, tier = item.partition(":")
-        keys[key.strip()] = (tier or "free").strip()
+        key, _, tier_name = item.partition(":")
+        keys[key.strip()] = (tier_name or "free").strip()
     return keys
 
 
@@ -54,9 +94,9 @@ REQUIRE_KEY = os.environ.get("EXERCISES_REQUIRE_KEY", "").lower() in {"1", "true
 
 
 def tier(x_api_key: str | None = Header(default=None)) -> str:
-    """Resolve the caller's tier from their API key."""
+    """Resolve an API caller's tier. Unconfigured deployments stay open."""
     if not API_KEYS and not REQUIRE_KEY:
-        return "pro"  # unconfigured deployment: everything open, for local dev
+        return "pro"
     if x_api_key in API_KEYS:
         return API_KEYS[x_api_key]
     if REQUIRE_KEY:
@@ -64,42 +104,20 @@ def tier(x_api_key: str | None = Header(default=None)) -> str:
     return "free"
 
 
-def require_pro(caller_tier: str = Depends(tier)) -> str:
-    if caller_tier != "pro":
-        raise HTTPException(
-            status_code=402,
-            detail="program generation requires a pro API key",
-        )
-    return caller_tier
-
-
-# --- models -----------------------------------------------------------
-class ProgramRequest(BaseModel):
-    goal: Literal[GOALS] = "hypertrophy"  # type: ignore[valid-type]
-    level: Literal[LEVELS] = "beginner"  # type: ignore[valid-type]
-    days_per_week: int = Field(3, ge=2, le=6)
-    equipment: str | list[str] = "full_gym"
-    session_minutes: int = Field(60, ge=20, le=180)
-    weeks: int = Field(4, ge=1, le=12)
-    language: str = "en"
-    seed: int | None = None
-    exclude_patterns: list[str] = Field(default_factory=list)
-
-
-# --- routes -----------------------------------------------------------
-@app.get("/v1/health")
+# --- catalog routes ---------------------------------------------------
+@app.get("/v1/health", tags=["catalog"])
 def health() -> dict:
-    catalog = get_catalog()
-    return {"status": "ok", "exercises": len(catalog.exercises)}
+    return {"status": "ok", "exercises": len(get_catalog().exercises),
+            "version": app.version}
 
 
-@app.get("/v1/facets")
+@app.get("/v1/facets", tags=["catalog"])
 def facets() -> dict:
     """Every value that can be filtered on — clients build their UI from this."""
     return get_catalog().facets()
 
 
-@app.get("/v1/exercises")
+@app.get("/v1/exercises", tags=["catalog"])
 def list_exercises(
     pattern: str | None = None,
     role: str | None = None,
@@ -134,33 +152,13 @@ def list_exercises(
     })
 
 
-@app.get("/v1/exercises/{exercise_id}")
+@app.get("/v1/exercises/{exercise_id}", tags=["catalog"])
 def get_exercise(exercise_id: str, language: str = "en",
                  caller_tier: str = Depends(tier)) -> dict:
     exercise = get_catalog().by_id.get(exercise_id)
     if exercise is None:
         raise HTTPException(status_code=404, detail="exercise not found")
     return {"attribution": ATTRIBUTION, **_serialize(exercise, language)}
-
-
-@app.post("/v1/programs")
-def create_program(request: ProgramRequest,
-                   caller_tier: str = Depends(require_pro)) -> dict:
-    profile = Profile(
-        goal=request.goal,
-        level=request.level,
-        days_per_week=request.days_per_week,
-        equipment=request.equipment,
-        session_minutes=request.session_minutes,
-        weeks=request.weeks,
-        language=request.language,
-        seed=request.seed,
-        exclude_patterns=tuple(request.exclude_patterns),
-    )
-    try:
-        return generate(profile)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _serialize(exercise: dict, language: str) -> dict:
@@ -186,3 +184,19 @@ def _serialize(exercise: dict, language: str) -> dict:
         "instructions": instructions.get(lang),
         "instruction_steps": steps.get(lang) or steps.get("en") or [],
     }
+
+
+# --- app backend ------------------------------------------------------
+app.include_router(accounts.router)
+app.include_router(programs.router)
+app.include_router(workouts.router)
+
+
+# --- media ------------------------------------------------------------
+# Served from the repository so a client can render a GIF straight from the
+# `image` / `gif_url` path in any response. Behind a CDN in production, but
+# correct as-is.
+for _folder in ("images", "videos"):
+    _path = os.path.join(REPO_ROOT, _folder)
+    if os.path.isdir(_path):
+        app.mount(f"/{_folder}", StaticFiles(directory=_path), name=_folder)

@@ -73,8 +73,9 @@ def test_single_exercise_and_404(client):
     assert client.get("/v1/exercises/nope").status_code == 404
 
 
-def test_program_generation(client):
-    body = client.post("/v1/programs", json={
+def test_program_preview(client):
+    """Preview is open to anyone — it is what makes the product demonstrable."""
+    body = client.post("/v1/programs/preview", json={
         "goal": "hypertrophy", "level": "intermediate", "days_per_week": 4,
         "session_minutes": 60, "weeks": 4, "language": "tr", "seed": 1,
     }).json()
@@ -83,22 +84,21 @@ def test_program_generation(client):
     assert body["weeks"][3]["is_deload"]
 
 
-def test_program_rejects_an_invalid_request(client):
-    assert client.post("/v1/programs", json={"days_per_week": 9}).status_code == 422
+def test_preview_rejects_an_invalid_request(client):
+    response = client.post("/v1/programs/preview", json={"days_per_week": 9})
+    assert response.status_code == 422
 
 
-def test_free_tier_can_read_but_not_generate(gated_client):
-    headers = {"X-API-Key": "freekey"}
-    assert gated_client.get("/v1/exercises", headers=headers).status_code == 200
-    response = gated_client.post("/v1/programs", json={}, headers=headers)
-    assert response.status_code == 402
-
-
-def test_pro_tier_can_generate(gated_client):
-    response = gated_client.post("/v1/programs", json={"seed": 1},
-                                 headers={"X-API-Key": "prokey"})
-    assert response.status_code == 200
+def test_saving_a_program_requires_an_account(client):
+    """Generating is free; keeping a program is what needs an account."""
+    assert client.post("/v1/programs", json={"seed": 1}).status_code == 401
 
 
 def test_missing_key_is_rejected_when_keys_are_required(gated_client):
     assert gated_client.get("/v1/exercises").status_code == 401
+
+
+def test_a_valid_key_reads_the_catalog(gated_client):
+    response = gated_client.get("/v1/exercises",
+                                headers={"X-API-Key": "freekey"})
+    assert response.status_code == 200
