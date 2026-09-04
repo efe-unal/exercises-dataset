@@ -6,3 +6,16 @@ __pycache__/
 
 # Claude Code local settings (do not publish)
 .claude/
+
+# Local database files
+*.db
+*.db-wal
+*.db-shm
+
+# Local environment configuration (never commit real secrets)
+.env
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo

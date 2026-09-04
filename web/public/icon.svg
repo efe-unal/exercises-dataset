@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Training">
+  <rect width="512" height="512" rx="112" fill="#2a78d6"/>
+  <!-- A barbell: the plainest symbol for the thing the app is about. -->
+  <g fill="#ffffff">
+    <rect x="96" y="236" width="320" height="40" rx="20"/>
+    <rect x="120" y="196" width="44" height="120" rx="18"/>
+    <rect x="348" y="196" width="44" height="120" rx="18"/>
+    <rect x="72" y="216" width="34" height="80" rx="14"/>
+    <rect x="406" y="216" width="34" height="80" rx="14"/>
+  </g>
+</svg>

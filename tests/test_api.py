@@ -1,0 +1,142 @@
+"""Tests for the HTTP API, including the free/pro tier gate."""
+
+import importlib
+
+import pytest
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def client():
+    import api.main
+    importlib.reload(api.main)
+    return TestClient(api.main.app)
+
+
+@pytest.fixture
+def gated_client(monkeypatch):
+    """A deployment configured with one free and one pro key."""
+    monkeypatch.setenv("EXERCISES_API_KEYS", "freekey:free,prokey:pro")
+    monkeypatch.setenv("EXERCISES_REQUIRE_KEY", "1")
+    import api.main
+    importlib.reload(api.main)
+    yield TestClient(api.main.app)
+    monkeypatch.delenv("EXERCISES_API_KEYS")
+    monkeypatch.delenv("EXERCISES_REQUIRE_KEY")
+    importlib.reload(api.main)
+
+
+def test_health(client):
+    body = client.get("/v1/health").json()
+    assert body["status"] == "ok"
+    assert body["exercises"] == 1324
+
+
+def test_facets_expose_filterable_values(client):
+    facets = client.get("/v1/facets").json()
+    assert "horizontal_push" in facets["pattern"]
+    assert "full_gym" in facets["equipment_profile"]
+
+
+def test_listing_filters_and_paginates(client):
+    body = client.get("/v1/exercises",
+                      params={"pattern": "squat", "role": "primary",
+                              "limit": 5}).json()
+    assert body["total"] > 5
+    assert len(body["results"]) == 5
+    assert all(e["pattern"] == "squat" for e in body["results"])
+    assert "Gym visual" in body["attribution"]
+
+
+def test_listing_returns_the_requested_language(client):
+    body = client.get("/v1/exercises",
+                      params={"language": "tr", "limit": 1}).json()
+    result = body["results"][0]
+    assert result["language"] == "tr"
+    assert result["instruction_steps"]
+
+
+def test_search_by_name(client):
+    body = client.get("/v1/exercises", params={"q": "deadlift"}).json()
+    assert body["total"] > 0
+    assert all("deadlift" in e["name"].lower() for e in body["results"])
+
+
+def test_unknown_equipment_profile_is_a_400(client):
+    response = client.get("/v1/exercises",
+                          params={"equipment_profile": "space_station"})
+    assert response.status_code == 400
+
+
+def test_single_exercise_and_404(client):
+    assert client.get("/v1/exercises/0001").json()["id"] == "0001"
+    assert client.get("/v1/exercises/nope").status_code == 404
+
+
+def test_alternatives_share_the_movement_pattern(client):
+    """A substitute has to train the same thing, not merely a shared muscle."""
+    original = client.get("/v1/exercises/0043").json()  # barbell full squat
+    body = client.get("/v1/exercises/0043/alternatives").json()
+    assert body["alternatives"]
+    for alternative in body["alternatives"]:
+        assert alternative["pattern"] == original["pattern"]
+        assert alternative["mechanic"] == original["mechanic"]
+        assert alternative["id"] != "0043"
+
+
+def test_alternatives_prefer_different_equipment(client):
+    """A substitute on the same machine is no help when that machine is busy."""
+    original = client.get("/v1/exercises/0043").json()
+    body = client.get("/v1/exercises/0043/alternatives").json()
+    assert body["alternatives"][0]["equipment"] != original["equipment"]
+
+
+def test_alternatives_respect_the_equipment_profile(client):
+    body = client.get("/v1/exercises/0043/alternatives",
+                      params={"equipment_profile": "bodyweight"}).json()
+    assert body["alternatives"]
+    assert all(a["equipment"] == "body weight" for a in body["alternatives"])
+
+
+def test_alternatives_are_never_harder_than_the_original(client):
+    from engine.taxonomy import DIFFICULTY_RANK
+    original = client.get("/v1/exercises/0662").json()  # push-up, a beginner move
+    body = client.get("/v1/exercises/0662/alternatives").json()
+    for alternative in body["alternatives"]:
+        assert (DIFFICULTY_RANK[alternative["difficulty"]]
+                <= DIFFICULTY_RANK[original["difficulty"]])
+
+
+def test_alternatives_for_an_unknown_exercise_is_a_404(client):
+    assert client.get("/v1/exercises/999999/alternatives").status_code == 404
+
+
+def test_program_preview(client):
+    """Preview is open to anyone — it is what makes the product demonstrable."""
+    body = client.post("/v1/programs/preview", json={
+        "goal": "hypertrophy", "level": "intermediate", "days_per_week": 4,
+        "session_minutes": 60, "weeks": 4, "language": "tr", "seed": 1,
+    }).json()
+    assert len(body["weeks"]) == 4
+    assert len(body["weeks"][0]["days"]) == 4
+    assert body["weeks"][3]["is_deload"]
+
+
+def test_preview_rejects_an_invalid_request(client):
+    response = client.post("/v1/programs/preview", json={"days_per_week": 9})
+    assert response.status_code == 422
+
+
+def test_saving_a_program_requires_an_account(client):
+    """Generating is free; keeping a program is what needs an account."""
+    assert client.post("/v1/programs", json={"seed": 1}).status_code == 401
+
+
+def test_missing_key_is_rejected_when_keys_are_required(gated_client):
+    assert gated_client.get("/v1/exercises").status_code == 401
+
+
+def test_a_valid_key_reads_the_catalog(gated_client):
+    response = gated_client.get("/v1/exercises",
+                                headers={"X-API-Key": "freekey"})
+    assert response.status_code == 200

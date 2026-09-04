@@ -1,0 +1,16 @@
+{
+  "name": "exercises-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Workspace for the exercises API client and the web app.",
+  "workspaces": [
+    "packages/*",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace web",
+    "build": "npm run build --workspace @exercises/api-client && npm run build --workspace web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  }
+}

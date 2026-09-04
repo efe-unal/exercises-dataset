@@ -42,6 +42,8 @@
 - [Data Source](#-data-source)
 - [Overview](#-overview)
 - [Interactive Browser & Developer Setup](#-interactive-browser--developer-setup)
+- [Program Engine](#-program-engine)
+- [App & API](#-app--api)
 - [File Structure](#-file-structure)
 - [Statistics](#-statistics)
 - [Data Schema](#-data-schema)
@@ -100,6 +102,78 @@ A step-by-step guide for integrating the dataset into your own application:
 
 ---
 
+## 🏋️ Program Engine
+
+The dataset describes *what* an exercise is. The engine in [`engine/`](engine/)
+decides *what to do with it* — it turns a goal, a training age, the available
+equipment and the time on hand into a complete training block: split, exercise
+selection, sets, reps, rest, effort and week-to-week progression.
+
+```bash
+pip install -r requirements.txt
+
+python -m engine.cli --goal hypertrophy --level intermediate \
+    --days 4 --equipment home_dumbbell --minutes 60 --lang tr
+
+uvicorn api.main:app --reload    # HTTP API, docs at /docs
+```
+
+```python
+from engine import Profile, generate
+
+program = generate(Profile(goal="strength", level="intermediate",
+                           days_per_week=4, session_minutes=70, weeks=4))
+```
+
+To do that it derives four fields the raw records do not carry — `pattern`
+(squat, hinge, horizontal push, …), `mechanic` (compound/isolation), `role`
+(primary/accessory/mobility) and `difficulty` — and these are exposed through
+the API as filters in their own right.
+
+Full design notes, the API reference and the tier configuration are in
+[`docs/PROGRAM_ENGINE.md`](docs/PROGRAM_ENGINE.md).
+
+---
+
+## 📱 App & API
+
+On top of the engine sits a complete application: accounts, saved programs,
+workout logging, and progression that reads what you actually lifted rather
+than a fixed schedule.
+
+```bash
+pip install -r requirements.txt && npm install
+uvicorn api.main:app --reload   # the API,  http://127.0.0.1:8000/docs
+npm run dev                     # the app,  http://127.0.0.1:5173
+```
+
+**[`app/`](app/) — the stateful backend.** Email/password accounts (scrypt
+hashes; only a token's hash is ever stored), saved program snapshots, a
+set-by-set workout log, and `progression.py`, which turns that log into the
+next session's load by double progression: add a step once every set reaches
+the top of the rep range, hold inside the range, and cut ten per cent only
+after two sessions stall below the bottom.
+
+**[`api/`](api/) — one HTTP surface, two audiences.** The catalog
+(`/v1/exercises`, `/v1/facets`, `/v1/programs/preview`) is stateless and
+API-key gated — the developer-facing product, and the reason a visitor can see
+a real generated program before signing up. Accounts, programs and logging sit
+behind a bearer token.
+
+**[`packages/api-client/`](packages/api-client/) — the typed client.** Plain
+`fetch` and an injected token store, no framework or platform assumptions, so
+the same file serves the web app, Node, and a future React Native app.
+
+**[`web/`](web/) — an installable PWA.** Works offline: the service worker
+caches the shell and the exercise media but never anything account-specific,
+and logged sessions queue locally and sync when the connection returns. The
+interface is translated (English and Turkish so far) and follows the account's
+language preference across devices.
+
+Running it and deploying it: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+---
+
 ## 📂 File Structure
 
 ```
@@ -107,6 +181,11 @@ exercises-dataset/
 ├── data/
 │   ├── exercises.json        # Full dataset — 1,324 exercise records (JSON array)
 │   └── exercises.schema.json # JSON Schema (2020-12) describing every record
+├── engine/                  # Program engine — movement taxonomy + program generator
+├── api/                     # FastAPI service over the catalog and the engine
+├── tests/                   # Test suite for the engine and the API
+├── docs/
+│   └── PROGRAM_ENGINE.md    # Engine design, API reference and usage
 ├── images/                  # 1,324 × 180×180 thumbnails  (© Gym visual)
 ├── videos/                  # 1,324 × 180×180 animation GIFs  (© Gym visual)
 ├── index.html               # Interactive exercise browser (client-side, no server needed)
@@ -120,6 +199,8 @@ exercises-dataset/
 - **`data/exercises.json`** — The primary data file. A JSON array of 1,324 exercise objects with all metadata. `image` / `gif_url` point to the local 180×180 assets, and each record carries an `attribution` field; `media_id` holds the original media reference id.
 - **`data/exercises.schema.json`** — A [JSON Schema](https://json-schema.org/) (Draft 2020-12) that formally describes every field, its type and constraints. Use it to validate the dataset or your own additions with any standard JSON Schema validator.
 - **`images/`, `videos/`** — 180×180 thumbnails and animation GIFs (© [Gym visual](https://gymvisual.com/), used with permission).
+- **`engine/`** — Turns the dataset into training programs: a movement taxonomy (`taxonomy.py`), an indexed catalog (`catalog.py`), session templates (`splits.py`), set/rep prescription and progression (`prescription.py`), the generator (`programs.py`) and a CLI (`cli.py`).
+- **`api/main.py`** — FastAPI service exposing the catalog and the generator over HTTP.
 - **`index.html`** — Standalone exercise browser. Open directly in any modern browser.
 - **`setup.html`** — Developer guide for DB setup, API integration, and LLM-assisted backend generation.
 - **`LICENSE`, `NOTICE.md`** — MIT (code/data) + the Gym visual media terms.
