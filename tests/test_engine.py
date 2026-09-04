@@ -143,6 +143,18 @@ def test_sessions_respect_the_time_budget(minutes):
         assert day["estimated_minutes"] <= minutes
 
 
+@pytest.mark.parametrize("minutes,expected_cap", [
+    (30, 3), (45, 4), (60, 6), (90, 8), (180, 8),
+])
+def test_sessions_never_run_to_a_dozen_movements(minutes, expected_cap):
+    """Fitting in the time is not the same as being a sensible session."""
+    program = generate(Profile(session_minutes=minutes, days_per_week=3,
+                               level="beginner", seed=1))
+    for day in program["weeks"][0]["days"]:
+        assert len(day["exercises"]) <= expected_cap
+        assert len(day["exercises"]) >= 3
+
+
 def test_equipment_profile_is_honoured():
     program = generate(Profile(equipment="home_dumbbell", days_per_week=3,
                                seed=5))

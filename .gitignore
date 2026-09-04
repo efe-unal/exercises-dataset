@@ -11,3 +11,10 @@ __pycache__/
 *.db
 *.db-wal
 *.db-shm
+
+# Local environment configuration (never commit real secrets)
+.env
+
+# Node
+node_modules/
+dist/

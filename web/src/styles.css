@@ -1,0 +1,658 @@
+/**
+ * Baseline styling: readable, thumb-friendly and theme-aware, but deliberately
+ * plain.
+ *
+ * Every colour and spacing decision is a custom property, so a designed visual
+ * layer can replace this file's values without touching a component. The
+ * chart tokens come from the validated data-visualisation palette.
+ */
+
+:root {
+  color-scheme: light;
+
+  --surface-0: #f5f5f3;
+  --surface-1: #fcfcfb;
+  --surface-2: #eeeeea;
+  --border: #dcdcd5;
+
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #78776f;
+
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --danger: #c0392b;
+
+  --series-1: #2a78d6;
+  --grid: #dcdcd5;
+
+  --radius: 10px;
+  --gap: 12px;
+  --page-max: 720px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface-0: #111110;
+    --surface-1: #1a1a19;
+    --surface-2: #242422;
+    --border: #34342f;
+
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #94938a;
+
+    --accent: #3987e5;
+    --accent-ink: #ffffff;
+    --danger: #e66767;
+
+    --series-1: #3987e5;
+    --grid: #34342f;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface-0: #111110;
+  --surface-1: #1a1a19;
+  --surface-2: #242422;
+  --border: #34342f;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #94938a;
+  --accent: #3987e5;
+  --accent-ink: #ffffff;
+  --danger: #e66767;
+  --series-1: #3987e5;
+  --grid: #34342f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Keep content clear of a phone's home indicator and notch. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0
+    env(safe-area-inset-left);
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  margin: 0 0 0.5em;
+}
+
+a {
+  color: var(--accent);
+}
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: var(--gap) 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.auth-links {
+  display: flex;
+  gap: var(--gap);
+  align-items: center;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 16px 16px 96px;
+}
+
+.page-header {
+  display: flex;
+  gap: var(--gap);
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+}
+
+/* --- navigation ------------------------------------------------------ */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-bar a {
+  flex: 1;
+  text-align: center;
+  padding: 12px 4px;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--text-muted);
+  /* A comfortable target regardless of the label's length. */
+  min-height: 48px;
+}
+
+.tab-bar a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- surfaces -------------------------------------------------------- */
+.panel,
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: var(--gap);
+}
+
+.panel.narrow {
+  max-width: 400px;
+  margin-inline: auto;
+}
+
+.card.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  flex-wrap: wrap;
+}
+
+.card-head {
+  display: flex;
+  gap: var(--gap);
+  align-items: flex-start;
+}
+
+.callout {
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin: var(--gap) 0;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+}
+
+.status-banner {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* --- text ------------------------------------------------------------ */
+.muted { color: var(--text-muted); }
+.small { font-size: 13px; }
+.error { color: var(--danger); }
+.suggestion { color: var(--text-secondary); font-size: 14px; margin: 4px 0 0; }
+.attribution { color: var(--text-muted); font-size: 12px; margin-top: 24px; }
+.counter { color: var(--text-muted); font-size: 14px; white-space: nowrap; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- controls -------------------------------------------------------- */
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  /* 44px is the smallest reliably tappable target. */
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button.primary,
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.button.subtle {
+  background: transparent;
+}
+
+.button.wide {
+  width: 100%;
+  margin-top: var(--gap);
+}
+
+.button.small {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+label {
+  display: block;
+  margin-bottom: var(--gap);
+}
+
+label > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+/* Keyboard focus must stay obvious; the browser default is not enough
+   against these surfaces. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+
+legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.options {
+  display: grid;
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  cursor: pointer;
+}
+
+.option input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+}
+
+.option small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.option:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.sliders label span {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.sliders input[type='range'] {
+  padding: 0;
+  min-height: 32px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: var(--gap);
+}
+
+/* --- lists ----------------------------------------------------------- */
+.plain-list,
+.exercise-list,
+.exercise-grid,
+.logged-sets,
+.stat-tiles {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.exercise-list > li {
+  margin-bottom: var(--gap);
+}
+
+.plan-row,
+.history-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-list li {
+  justify-content: space-between;
+}
+
+.exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--gap);
+}
+
+.grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  text-decoration: none;
+  color: var(--text-primary);
+  height: 100%;
+}
+
+.steps {
+  padding-left: 20px;
+  color: var(--text-secondary);
+}
+
+.steps li {
+  margin-bottom: 8px;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  margin-top: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* --- media ----------------------------------------------------------- */
+.exercise-media {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.exercise-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.play-hint {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  font-size: 11px;
+  color: var(--accent-ink);
+  background: rgb(0 0 0 / 0.55);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* --- set logging ----------------------------------------------------- */
+.set-logger {
+  margin-top: var(--gap);
+  border-top: 1px solid var(--border);
+  padding-top: var(--gap);
+}
+
+.logged-sets li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.logged-sets button {
+  min-height: 32px;
+  padding: 2px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+}
+
+.set-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.set-inputs label {
+  margin: 0;
+}
+
+/* --- stats and volume ------------------------------------------------ */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--gap);
+  margin-bottom: 24px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.volume-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+
+.volume-row .bar {
+  /* The bar's length encodes the set count; the number stays readable
+     beside it rather than inside a short bar. */
+  display: inline-block;
+  min-width: 2ch;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--series-1) 22%, transparent);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.week-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--gap);
+}
+
+.week-tabs button {
+  min-height: 36px;
+  min-width: 44px;
+  padding: 4px 10px;
+}
+
+.week-tabs button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* --- chart ----------------------------------------------------------- */
+.chart {
+  margin: 0 0 var(--gap);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.chart svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart .grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.chart .series-line {
+  stroke: var(--series-1);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart .series-dot {
+  fill: var(--series-1);
+  /* A surface-coloured ring keeps overlapping points readable. */
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+
+.chart .crosshair {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart .axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.chart .axis-label.end {
+  text-anchor: end;
+}
+
+.chart figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.data-table {
+  width: 100%;
+  margin-top: var(--gap);
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* --- motion ---------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

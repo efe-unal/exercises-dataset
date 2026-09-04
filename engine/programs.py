@@ -26,6 +26,23 @@ from .splits import Day, Slot, select_split
 # time the athlete actually has.
 _SECONDS_PER_SET_OVERHEAD = 45
 
+# Time is not the only limit on a session. Low-volume prescriptions leave room
+# for a dozen movements inside an hour, but nobody trains a dozen movements in
+# a session: past roughly eight the athlete is spreading effort thin and
+# spending the time setting equipment up rather than lifting. Beyond the cap
+# the right answer is more sets of what is already there, not more exercises.
+_MIN_EXERCISES_PER_SESSION = 3
+_MAX_EXERCISES_PER_SESSION = 8
+_MINUTES_PER_EXERCISE = 10
+
+
+def _exercise_cap(session_minutes: int) -> int:
+    """How many distinct movements belong in a session of this length."""
+    return max(
+        _MIN_EXERCISES_PER_SESSION,
+        min(_MAX_EXERCISES_PER_SESSION, session_minutes // _MINUTES_PER_EXERCISE),
+    )
+
 
 @dataclass
 class Profile:
@@ -152,8 +169,11 @@ def _entry(slot: Slot, exercise: dict, rx, profile: Profile) -> dict:
 def _build_day(catalog: Catalog, day: Day, profile: Profile, equipment,
                used: set[str], rng: random.Random) -> dict:
     exclude = set(profile.exclude_patterns)
+    cap = _exercise_cap(profile.session_minutes)
     entries: list[dict] = []
     for slot in day.slots:
+        if len(entries) >= cap:
+            break
         exercise = _pick(catalog, slot, equipment, used, rng, exclude,
                          profile.level)
         if exercise is None:
@@ -161,10 +181,10 @@ def _build_day(catalog: Catalog, day: Day, profile: Profile, equipment,
         rx = prescribe(profile.goal, profile.level, exercise["role"],
                        exercise["mechanic"])
         # Slots are ordered most- to least-important, so once the session is
-        # full the rest are dropped rather than squeezed in. The first three
+        # full the rest are dropped rather than squeezed in. The first few
         # always stay: a day with fewer movements than that is not a session.
         candidate = {"prescription": rx.as_dict()}
-        if (len(entries) >= 3
+        if (len(entries) >= _MIN_EXERCISES_PER_SESSION
                 and _estimate_minutes(entries + [candidate]) > profile.session_minutes):
             break
         used.add(exercise["id"])
@@ -182,11 +202,16 @@ def _top_up(catalog: Catalog, day: Day, profile: Profile, equipment,
     template would otherwise finish well under the athlete's available time.
     """
     exclude = set(profile.exclude_patterns)
+    cap = _exercise_cap(profile.session_minutes)
+    if len(entries) >= cap:
+        return
     day_patterns = [p for slot in day.slots for p in slot.patterns
                     if p not in exclude]
     if not day_patterns:
         return
     for pattern in day_patterns * 2:  # two passes before giving up
+        if len(entries) >= cap:
+            return
         filler = Slot(patterns=(pattern,), role="accessory",
                       label=f"Accessory — {pattern.replace('_', ' ')}")
         exercise = _pick(catalog, filler, equipment, used, rng, exclude,
