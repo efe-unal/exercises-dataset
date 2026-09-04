@@ -2,14 +2,26 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..auth import authenticate, current_user, issue_token, register_user, revoke_token
+from ..auth import (
+    authenticate,
+    current_user,
+    issue_token,
+    register_user,
+    request_password_reset,
+    reset_password,
+    revoke_token,
+)
 from ..db import get_session
 from ..models import User
 from ..schemas import (
     LoginRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     RegisterRequest,
     TokenResponse,
     UpdateUserRequest,
@@ -43,6 +55,33 @@ def logout(authorization: str | None = Header(default=None),
            user: User = Depends(current_user)) -> None:
     # current_user has already validated the header shape.
     revoke_token(session, authorization.split(" ", 1)[1].strip())
+
+
+# Where the reset link points. The app owns the page that takes a new
+# password, so the API only needs to know how to address it.
+RESET_URL_TEMPLATE = os.environ.get(
+    "PASSWORD_RESET_URL", "http://localhost:5173/reset-password?token={token}")
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+def request_reset(request: PasswordResetRequest,
+                  session: Session = Depends(get_session)) -> dict:
+    """Ask for a reset link.
+
+    Always reports the same thing, whether or not that address has an account:
+    telling the caller which emails are registered is exactly the answer an
+    attacker is looking for.
+    """
+    request_password_reset(session, request.email, RESET_URL_TEMPLATE)
+    return {"detail": "If that address has an account, a reset link is on its "
+                      "way."}
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+def confirm_reset(request: PasswordResetConfirm,
+                  session: Session = Depends(get_session)) -> None:
+    """Set a new password using a reset link, and sign every device out."""
+    reset_password(session, request.token, request.password)
 
 
 @router.get("/me", response_model=UserResponse)

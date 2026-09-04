@@ -18,6 +18,7 @@ import { useTranslation } from './lib/i18n';
 import { onPendingChange, pendingCount, startAutoFlush } from './lib/offline';
 import { SignIn, SignUp } from './pages/Auth';
 import { ExerciseDetail } from './pages/ExerciseDetail';
+import { ForgotPassword, ResetPassword } from './pages/PasswordReset';
 import { Exercises } from './pages/Exercises';
 import { ProgramBuilder } from './pages/ProgramBuilder';
 import { Programs } from './pages/Programs';
@@ -66,6 +67,10 @@ export function App() {
           />
           <Route path="/sign-in" element={user ? <Navigate to="/" /> : <SignIn />} />
           <Route path="/sign-up" element={user ? <Navigate to="/" /> : <SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Reachable while signed in too: someone following a reset link
+              on a device that still holds a session must be able to use it. */}
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

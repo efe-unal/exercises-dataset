@@ -28,6 +28,10 @@ _MAXMEM = 128 * _SCRYPT_N * _SCRYPT_R * 2
 TOKEN_BYTES = 32
 TOKEN_TTL = timedelta(days=30)
 
+# A reset link is a password in an inbox, so it lives for as short a time as
+# is still usable.
+RESET_TOKEN_TTL = timedelta(minutes=30)
+
 MIN_PASSWORD_LENGTH = 8
 
 

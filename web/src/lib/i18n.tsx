@@ -222,6 +222,22 @@ const en: Dictionary = {
   'swap.use': 'Use this',
   'swap.none': 'No suitable alternative with this equipment.',
   'swap.swapped': 'Swapped in for today',
+
+  'reset.forgot': 'Forgotten your password?',
+  'reset.forgotTitle': 'Reset your password',
+  'reset.forgotBody':
+    'Enter your email and we will send you a link to choose a new password.',
+  'reset.sendLink': 'Send the link',
+  'reset.checkInbox': 'Check your inbox',
+  'reset.sentBody':
+    'If that address has an account, a reset link is on its way. It works once and expires in 30 minutes.',
+  'reset.chooseTitle': 'Choose a new password',
+  'reset.chooseBody':
+    'Setting a new password signs you out everywhere else.',
+  'reset.newPassword': 'New password',
+  'reset.setPassword': 'Set the password',
+  'reset.badLink': 'This link is not valid',
+  'reset.requestAnother': 'Request a new link',
 };
 
 const tr: Dictionary = {
@@ -430,6 +446,22 @@ const tr: Dictionary = {
   'swap.use': 'Bunu kullan',
   'swap.none': 'Bu ekipmanla uygun bir alternatif yok.',
   'swap.swapped': 'Bugünlük değiştirildi',
+
+  'reset.forgot': 'Şifreni mi unuttun?',
+  'reset.forgotTitle': 'Şifreni sıfırla',
+  'reset.forgotBody':
+    'E-posta adresini gir, yeni şifre belirlemen için bir bağlantı gönderelim.',
+  'reset.sendLink': 'Bağlantıyı gönder',
+  'reset.checkInbox': 'Gelen kutunu kontrol et',
+  'reset.sentBody':
+    'Bu adrese ait bir hesap varsa sıfırlama bağlantısı yola çıktı. Bağlantı tek kullanımlık ve 30 dakika geçerli.',
+  'reset.chooseTitle': 'Yeni şifre belirle',
+  'reset.chooseBody':
+    'Yeni şifre belirlediğinde diğer bütün cihazlardan çıkış yapılır.',
+  'reset.newPassword': 'Yeni şifre',
+  'reset.setPassword': 'Şifreyi kaydet',
+  'reset.badLink': 'Bu bağlantı geçersiz',
+  'reset.requestAnother': 'Yeni bağlantı iste',
 };
 
 const DICTIONARIES: Record<string, Dictionary> = { en, tr };

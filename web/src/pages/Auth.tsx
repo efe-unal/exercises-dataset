@@ -101,6 +101,12 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </button>
       </form>
 
+      {!isSignUp && (
+        <p className="muted">
+          <Link to="/forgot-password">{t('reset.forgot')}</Link>
+        </p>
+      )}
+
       <p className="muted">
         {isSignUp ? (
           <>

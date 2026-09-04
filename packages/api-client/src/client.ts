@@ -207,6 +207,26 @@ export class ExercisesClient {
     }
   }
 
+  /** Ask for a reset link. Succeeds whether or not the address has an account. */
+  requestPasswordReset(email: string): Promise<{ detail: string }> {
+    return this.request('/v1/auth/password-reset/request', {
+      method: 'POST',
+      body: { email },
+    });
+  }
+
+  /** Set a new password from a reset link. Signs every device out. */
+  async confirmPasswordReset(token: string, password: string): Promise<void> {
+    await this.request<void>('/v1/auth/password-reset/confirm', {
+      method: 'POST',
+      body: { token, password },
+    });
+    // The server has just invalidated every session, this device's included.
+    // Holding on to the old token would leave the app looking signed in until
+    // the next request failed.
+    await this.tokens.set(null);
+  }
+
   me(): Promise<User> {
     return this.request<User>('/v1/auth/me', { auth: true });
   }

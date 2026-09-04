@@ -30,6 +30,8 @@ interface AuthState {
     language?: string;
   }): Promise<void>;
   signOut(): Promise<void>;
+  /** Drop the local session without calling the server. */
+  clearSession(): void;
   refresh(): Promise<void>;
 }
 
@@ -75,6 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         await api.logout();
+        setUser(null);
+      },
+      clearSession() {
         setUser(null);
       },
       refresh,

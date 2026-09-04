@@ -23,7 +23,14 @@ DEFAULT_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "120"))
 AUTH_LIMIT = int(os.environ.get("AUTH_RATE_LIMIT_PER_MINUTE", "10"))
 WINDOW_SECONDS = 60
 
-_AUTH_PATHS = ("/v1/auth/login", "/v1/auth/register")
+_AUTH_PATHS = (
+    "/v1/auth/login",
+    "/v1/auth/register",
+    # Reset requests are a way to probe for accounts and to spam an inbox, so
+    # they get the same tight budget as a login.
+    "/v1/auth/password-reset/request",
+    "/v1/auth/password-reset/confirm",
+)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

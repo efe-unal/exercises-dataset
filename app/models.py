@@ -78,6 +78,26 @@ class AuthToken(Base):
     user: Mapped[User] = relationship(back_populates="tokens")
 
 
+class PasswordResetToken(Base):
+    """A single-use, short-lived token for choosing a new password.
+
+    Separate from ``AuthToken`` deliberately: a reset token is not a session,
+    must not be usable as one, and is consumed rather than expired.
+    """
+
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
+                                                     default=None)
+
+
 class Program(Base):
     """A generated block, saved so it can be trained through and logged against."""
 

@@ -69,9 +69,13 @@ that point, not after.
 
 ## What is deliberately not here
 
-- **Password reset.** The mechanics are straightforward, but sending mail
-  needs an email provider chosen and configured; until then a forgotten
-  password has no self-service recovery.
+- **Email delivery.** The password reset flow is complete and tested — tokens
+  are single-use, expire in thirty minutes, invalidate the previous link, and
+  sign every device out on success. What is missing is a provider to carry the
+  message: `EMAIL_BACKEND=console` logs it instead of sending, so the flow
+  works in development but a real user cannot recover their password. Turning
+  it on means implementing one class in `app/mail.py` and naming it in
+  `EMAIL_BACKEND`.
 - **Payments.** Tiers are enforced (`user.tier`), but nothing sets a user to
   `pro` except an admin editing the row.
 - **A shared rate-limit store.** The limiter counts per process, so with

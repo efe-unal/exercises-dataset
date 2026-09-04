@@ -175,6 +175,144 @@ def test_profile_can_be_updated(client, account):
     assert response.json()["unit_system"] == "imperial"
 
 
+# --- password reset ---------------------------------------------------
+def _reset_token_for(email: str) -> str:
+    """Read the token a request created.
+
+    In a real deployment this arrives by email; the test reaches into the
+    database because there is no provider configured, which is exactly the
+    documented state of the feature.
+    """
+    from sqlalchemy import select
+
+    from app.models import PasswordResetToken, User
+    from app.security import generate_token, hash_token
+
+    with SessionLocal() as session:
+        user = session.query(User).filter_by(email=email.lower()).one()
+        row = session.scalar(
+            select(PasswordResetToken)
+            .where(PasswordResetToken.user_id == user.id,
+                   PasswordResetToken.used_at.is_(None)))
+        assert row is not None
+        # The stored value is a hash, so the plain token cannot be read back.
+        # Replace it with one this test knows, which is what a real link
+        # would have carried.
+        token, token_hash = generate_token()
+        row.token_hash = token_hash
+        assert hash_token(token) == token_hash
+        session.add(row)
+        session.commit()
+        return token
+
+
+def test_reset_request_succeeds_for_a_real_address(client, account):
+    _, email = account
+    response = client.post("/v1/auth/password-reset/request",
+                           json={"email": email})
+    assert response.status_code == 202
+
+
+def test_reset_request_reveals_nothing_about_unknown_addresses(client, account):
+    """An attacker must not learn which emails have accounts."""
+    _, email = account
+    known = client.post("/v1/auth/password-reset/request", json={"email": email})
+    unknown = client.post("/v1/auth/password-reset/request",
+                          json={"email": "nobody@example.com"})
+    assert known.status_code == unknown.status_code == 202
+    assert known.json() == unknown.json()
+
+
+def test_a_reset_token_sets_a_new_password(client, account):
+    _, email = account
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+    token = _reset_token_for(email)
+
+    assert client.post("/v1/auth/password-reset/confirm",
+                       json={"token": token,
+                             "password": "a-brand-new-password"}).status_code == 204
+
+    assert client.post("/v1/auth/login",
+                       json={"email": email,
+                             "password": "a-brand-new-password"}).status_code == 200
+    assert client.post("/v1/auth/login",
+                       json={"email": email,
+                             "password": "correct-horse-1"}).status_code == 401
+
+
+def test_a_reset_token_works_only_once(client, account):
+    _, email = account
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+    token = _reset_token_for(email)
+    body = {"token": token, "password": "a-brand-new-password"}
+
+    assert client.post("/v1/auth/password-reset/confirm", json=body).status_code == 204
+    assert client.post("/v1/auth/password-reset/confirm", json=body).status_code == 400
+
+
+def test_a_reset_signs_every_device_out(client, account):
+    """A reset usually means the old password is compromised."""
+    headers, email = account
+    assert client.get("/v1/auth/me", headers=headers).status_code == 200
+
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+    token = _reset_token_for(email)
+    client.post("/v1/auth/password-reset/confirm",
+                json={"token": token, "password": "a-brand-new-password"})
+
+    assert client.get("/v1/auth/me", headers=headers).status_code == 401
+
+
+def test_requesting_again_invalidates_the_earlier_link(client, account):
+    _, email = account
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+    first = _reset_token_for(email)
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+
+    assert client.post("/v1/auth/password-reset/confirm",
+                       json={"token": first,
+                             "password": "a-brand-new-password"}).status_code == 400
+
+
+def test_an_expired_token_is_refused(client, account):
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from app.models import PasswordResetToken, User, utcnow
+
+    _, email = account
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+    token = _reset_token_for(email)
+
+    with SessionLocal() as session:
+        user = session.query(User).filter_by(email=email.lower()).one()
+        row = session.scalar(select(PasswordResetToken)
+                             .where(PasswordResetToken.user_id == user.id))
+        row.expires_at = utcnow() - timedelta(minutes=1)
+        session.add(row)
+        session.commit()
+
+    assert client.post("/v1/auth/password-reset/confirm",
+                       json={"token": token,
+                             "password": "a-brand-new-password"}).status_code == 400
+
+
+def test_a_made_up_token_is_refused(client):
+    response = client.post("/v1/auth/password-reset/confirm",
+                           json={"token": "x" * 40, "password": "long-enough-1"})
+    assert response.status_code == 400
+
+
+def test_a_reset_still_enforces_the_password_policy(client, account):
+    _, email = account
+    client.post("/v1/auth/password-reset/request", json={"email": email})
+    token = _reset_token_for(email)
+    response = client.post("/v1/auth/password-reset/confirm",
+                           json={"token": token, "password": "short"})
+    assert response.status_code == 422
+
+
 # --- programs ---------------------------------------------------------
 def test_preview_needs_no_account(client):
     response = client.post("/v1/programs/preview",
