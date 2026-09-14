@@ -33,6 +33,7 @@ const en: Dictionary = {
   'common.min': 'min',
   'common.week': 'Week',
   'common.saved': 'Saved.',
+  'common.save': 'Save',
 
   'auth.signIn': 'Sign in',
   'auth.signUp': 'Sign up',
@@ -223,6 +224,48 @@ const en: Dictionary = {
   'swap.none': 'No suitable alternative with this equipment.',
   'swap.swapped': 'Swapped in for today',
 
+  'nav.activity': 'Activity',
+
+  'profile.follow': 'Follow',
+  'profile.unfollow': 'Following',
+  'profile.followers': '{count} followers',
+  'profile.following': '{count} following',
+  'profile.notFound': 'No such profile',
+  'profile.emptySelf':
+    'Nothing published yet. Finish a workout and choose to publish it.',
+  'profile.emptyOther': 'Nothing published yet.',
+  'profile.visitorPrompt':
+    'This is a training log. Build your own programme and keep your own —',
+  'profile.yourProfile': 'Your profile',
+  'profile.username': 'Username',
+  'profile.bio': 'Bio',
+  'profile.claimUsername':
+    'Choose a username to get a profile you can share. Until you do, nothing of yours is public.',
+
+  'share.button': 'Share',
+  'share.publish': 'Publish',
+  'share.publishTitle': 'Publish this workout?',
+  'share.publishExplains':
+    'It appears on your profile, and anyone with the link can see the exercises, sets and weights. Your other workouts stay private.',
+  'share.keepPrivate': 'Keep private',
+  'share.caption': 'Say something (optional)',
+  'share.captionPlaceholder': 'How did it go?',
+  'share.chooseUsername': 'Choose a username',
+  'share.usernameHint': '3-30 characters: letters, digits and underscores.',
+  'share.usernameTaken': 'That username is taken — try another.',
+  'share.willAppearOn': 'It will appear on',
+  'share.unpublish': 'Unpublish',
+  'share.confirmUnpublish': 'Take this workout off your profile?',
+  'share.downloaded': 'The card was saved to your downloads.',
+  'share.andMore': 'and {count} more',
+  'share.published': 'Published.',
+
+  'activity.empty': 'Nothing yet. Follow someone and their workouts show up here.',
+  'activity.someone': 'Someone',
+  'activity.publishedWorkout': 'published a workout',
+  'activity.followingTitle': 'Following',
+  'activity.followingEmpty': 'You are not following anyone yet.',
+
   'reset.forgot': 'Forgotten your password?',
   'reset.forgotTitle': 'Reset your password',
   'reset.forgotBody':
@@ -257,6 +300,7 @@ const tr: Dictionary = {
   'common.min': 'dk',
   'common.week': 'Hafta',
   'common.saved': 'Kaydedildi.',
+  'common.save': 'Kaydet',
 
   'auth.signIn': 'Giriş yap',
   'auth.signUp': 'Kayıt ol',
@@ -446,6 +490,48 @@ const tr: Dictionary = {
   'swap.use': 'Bunu kullan',
   'swap.none': 'Bu ekipmanla uygun bir alternatif yok.',
   'swap.swapped': 'Bugünlük değiştirildi',
+
+  'nav.activity': 'Akış',
+
+  'profile.follow': 'Takip et',
+  'profile.unfollow': 'Takiptesin',
+  'profile.followers': '{count} takipçi',
+  'profile.following': '{count} takip',
+  'profile.notFound': 'Böyle bir profil yok',
+  'profile.emptySelf':
+    'Henüz bir şey paylaşmadın. Bir antrenmanı bitir ve paylaşmayı seç.',
+  'profile.emptyOther': 'Henüz paylaşılmış bir antrenman yok.',
+  'profile.visitorPrompt':
+    'Burası bir antrenman günlüğü. Kendi programını kur, kendi kaydını tut —',
+  'profile.yourProfile': 'Profilin',
+  'profile.username': 'Kullanıcı adı',
+  'profile.bio': 'Hakkında',
+  'profile.claimUsername':
+    'Paylaşabileceğin bir profil için kullanıcı adı seç. Seçmediğin sürece hiçbir verin herkese açık değil.',
+
+  'share.button': 'Paylaş',
+  'share.publish': 'Yayınla',
+  'share.publishTitle': 'Bu antrenman yayınlansın mı?',
+  'share.publishExplains':
+    'Profilinde görünür ve bağlantıya sahip herkes hareketleri, setleri ve ağırlıkları görebilir. Diğer antrenmanların gizli kalır.',
+  'share.keepPrivate': 'Gizli kalsın',
+  'share.caption': 'Bir şey yaz (isteğe bağlı)',
+  'share.captionPlaceholder': 'Nasıl geçti?',
+  'share.chooseUsername': 'Bir kullanıcı adı seç',
+  'share.usernameHint': '3-30 karakter: harf, rakam ve alt çizgi.',
+  'share.usernameTaken': 'Bu kullanıcı adı alınmış — başka bir tane dene.',
+  'share.willAppearOn': 'Şurada görünecek:',
+  'share.unpublish': 'Yayından kaldır',
+  'share.confirmUnpublish': 'Bu antrenman profilinden kaldırılsın mı?',
+  'share.downloaded': 'Kart indirilenlere kaydedildi.',
+  'share.andMore': 've {count} tane daha',
+  'share.published': 'Yayınlandı.',
+
+  'activity.empty': 'Henüz bir şey yok. Birini takip et, antrenmanları burada görünsün.',
+  'activity.someone': 'Biri',
+  'activity.publishedWorkout': 'bir antrenman paylaştı',
+  'activity.followingTitle': 'Takip ettiklerin',
+  'activity.followingEmpty': 'Henüz kimseyi takip etmiyorsun.',
 
   'reset.forgot': 'Şifreni mi unuttun?',
   'reset.forgotTitle': 'Şifreni sıfırla',

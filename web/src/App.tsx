@@ -15,10 +15,13 @@ import {
 
 import { useAuth } from './lib/auth';
 import { useTranslation } from './lib/i18n';
+import { onUnreadChange, startUnreadPolling } from './lib/notifications';
 import { onPendingChange, pendingCount, startAutoFlush } from './lib/offline';
 import { SignIn, SignUp } from './pages/Auth';
 import { ExerciseDetail } from './pages/ExerciseDetail';
+import { Notifications } from './pages/Notifications';
 import { ForgotPassword, ResetPassword } from './pages/PasswordReset';
+import { Profile } from './pages/Profile';
 import { Exercises } from './pages/Exercises';
 import { ProgramBuilder } from './pages/ProgramBuilder';
 import { Programs } from './pages/Programs';
@@ -67,10 +70,19 @@ export function App() {
           />
           <Route path="/sign-in" element={user ? <Navigate to="/" /> : <SignIn />} />
           <Route path="/sign-up" element={user ? <Navigate to="/" /> : <SignUp />} />
+          <Route
+            path="/activity"
+            element={<RequireAuth>{<Notifications />}</RequireAuth>}
+          />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* Reachable while signed in too: someone following a reset link
               on a device that still holds a session must be able to use it. */}
           <Route path="/reset-password" element={<ResetPassword />} />
+          {/* A handle is the public identity, so it owns a top-level path.
+              React Router has no partial-segment parameters, so the whole
+              segment is captured and the @ prefix is checked in the page —
+              which is also what keeps a handle from shadowing a page name. */}
+          <Route path="/:handle" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
@@ -83,6 +95,17 @@ export function App() {
 /** Bottom tabs: thumb-reachable, which is where navigation belongs on a phone. */
 function TabBar() {
   const { t } = useTranslation();
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    const stopPolling = startUnreadPolling();
+    const stopWatching = onUnreadChange(setUnread);
+    return () => {
+      stopPolling();
+      stopWatching();
+    };
+  }, []);
+
   return (
     <nav className="tab-bar" aria-label="Main">
       <NavLink to="/" end>
@@ -90,6 +113,10 @@ function TabBar() {
       </NavLink>
       <NavLink to="/programs">{t('nav.programs')}</NavLink>
       <NavLink to="/exercises">{t('nav.exercises')}</NavLink>
+      <NavLink to="/activity" className="tab-with-badge">
+        {t('nav.activity')}
+        {unread > 0 && <span className="tab-badge">{unread > 9 ? '9+' : unread}</span>}
+      </NavLink>
       <NavLink to="/progress">{t('nav.progress')}</NavLink>
       <NavLink to="/settings">{t('nav.settings')}</NavLink>
     </nav>

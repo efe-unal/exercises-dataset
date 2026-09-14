@@ -7,6 +7,7 @@
  */
 
 import type {
+  AppNotification,
   AuthToken,
   BodyMetric,
   Exercise,
@@ -16,7 +17,10 @@ import type {
   LogSessionRequest,
   NextSession,
   Plan,
+  ProfileResponse,
+  ProfileSummary,
   ProgramRequest,
+  PublishedSession,
   ProgramSummary,
   SaveProgramRequest,
   SavedPlan,
@@ -235,12 +239,94 @@ export class ExercisesClient {
     display_name?: string;
     language?: string;
     unit_system?: 'metric' | 'imperial';
+    username?: string;
+    bio?: string;
   }): Promise<User> {
     return this.request<User>('/v1/auth/me', {
       method: 'PATCH',
       body: changes,
       auth: true,
     });
+  }
+
+  // --- social ---------------------------------------------------------
+  /** A public profile. Readable signed-out, so a shared link always opens. */
+  profile(
+    username: string,
+    options: { limit?: number; offset?: number } = {},
+  ): Promise<ProfileResponse> {
+    return this.request<ProfileResponse>(
+      `/v1/profiles/${encodeURIComponent(username)}`,
+      // `auth: true` sends the token when there is one, so the same page can
+      // show a follow button to a signed-in viewer.
+      { query: options, auth: true },
+    );
+  }
+
+  publishedSession(username: string, sessionId: string): Promise<PublishedSession> {
+    return this.request<PublishedSession>(
+      `/v1/profiles/${encodeURIComponent(username)}/sessions/${encodeURIComponent(sessionId)}`,
+    );
+  }
+
+  publishSession(sessionId: string, caption?: string): Promise<PublishedSession> {
+    return this.request<PublishedSession>(
+      `/v1/workouts/sessions/${encodeURIComponent(sessionId)}/publish`,
+      { method: 'POST', body: { caption: caption ?? null }, auth: true },
+    );
+  }
+
+  unpublishSession(sessionId: string): Promise<void> {
+    return this.request<void>(
+      `/v1/workouts/sessions/${encodeURIComponent(sessionId)}/publish`,
+      { method: 'DELETE', auth: true },
+    );
+  }
+
+  followProfile(username: string): Promise<void> {
+    return this.request<void>(
+      `/v1/profiles/${encodeURIComponent(username)}/follow`,
+      { method: 'POST', auth: true },
+    );
+  }
+
+  unfollowProfile(username: string): Promise<void> {
+    return this.request<void>(
+      `/v1/profiles/${encodeURIComponent(username)}/follow`,
+      { method: 'DELETE', auth: true },
+    );
+  }
+
+  following(): Promise<ProfileSummary[]> {
+    return this.request<ProfileSummary[]>('/v1/me/following', { auth: true });
+  }
+
+  followers(): Promise<ProfileSummary[]> {
+    return this.request<ProfileSummary[]>('/v1/me/followers', { auth: true });
+  }
+
+  notifications(unreadOnly = false): Promise<AppNotification[]> {
+    return this.request<AppNotification[]>('/v1/notifications', {
+      query: { unread_only: unreadOnly },
+      auth: true,
+    });
+  }
+
+  unreadNotificationCount(): Promise<{ unread: number }> {
+    return this.request('/v1/notifications/unread-count', { auth: true });
+  }
+
+  markNotificationsRead(): Promise<void> {
+    return this.request<void>('/v1/notifications/read', {
+      method: 'POST',
+      auth: true,
+    });
+  }
+
+  /** The public URL for a profile — what a share card points at. */
+  profileUrl(username: string, origin?: string): string {
+    const base = origin ?? globalThis.location?.origin ?? this.baseUrl;
+    return `${base}/@${encodeURIComponent(username)}`;
   }
 
   // --- catalog --------------------------------------------------------

@@ -46,8 +46,9 @@ def register_user(session: Session, email: str, password: str,
     try:
         password_hash = hash_password(password)
     except WeakPassword as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=str(exc)) from exc
+        # 422 as an integer: Starlette renamed its constant for this
+        # code, and the number is stable across both versions.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     user = User(email=email, password_hash=password_hash,
                 display_name=display_name, language=language)
     session.add(user)
@@ -148,8 +149,9 @@ def reset_password(session: Session, token: str, new_password: str) -> None:
     try:
         password_hash = hash_password(new_password)
     except WeakPassword as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=str(exc)) from exc
+        # 422 as an integer: Starlette renamed its constant for this
+        # code, and the number is stable across both versions.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     user = session.get(User, row.user_id)
     if user is None:
@@ -188,6 +190,23 @@ def current_user(authorization: str | None = Header(default=None),
     row.last_used_at = utcnow()
     session.commit()
     return row.user
+
+
+def optional_user(authorization: str | None = Header(default=None),
+                  session: Session = Depends(get_session)) -> User | None:
+    """Resolve the caller if they are signed in, otherwise ``None``.
+
+    Public pages need this: a shared profile link has to open for someone who
+    does not have an account yet, while still showing a follow button to
+    someone who does. A bad or expired token reads as signed-out rather than
+    as an error, since the page is public either way.
+    """
+    if not authorization:
+        return None
+    try:
+        return current_user(authorization, session)
+    except HTTPException:
+        return None
 
 
 def require_pro(user: User = Depends(current_user)) -> User:

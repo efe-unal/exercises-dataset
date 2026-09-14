@@ -42,6 +42,8 @@ class UserResponse(BaseModel):
     id: str
     email: str
     display_name: str | None
+    username: str | None = None
+    bio: str | None = None
     language: str
     unit_system: str
     tier: str
@@ -54,6 +56,60 @@ class UpdateUserRequest(BaseModel):
     display_name: str | None = Field(default=None, max_length=120)
     language: str | None = Field(default=None, max_length=8)
     unit_system: Literal["metric", "imperial"] | None = None
+    # Claiming a handle is what creates a public profile; until then the
+    # account has none. Validated in app/social.py, not here, because the
+    # rules include a reserved list and a uniqueness check.
+    username: str | None = Field(default=None, min_length=3, max_length=30)
+    bio: str | None = Field(default=None, max_length=300)
+
+
+# --- social -----------------------------------------------------------
+class ProfileSummary(BaseModel):
+    username: str
+    display_name: str
+    bio: str | None = None
+    followers: int
+    following: int
+
+
+class PublishedExercise(BaseModel):
+    exercise_id: str
+    name: str
+    sets: int
+    best_weight_kg: float | None
+    total_reps: int
+
+
+class PublishedSession(BaseModel):
+    id: str
+    day_name: str
+    caption: str | None
+    published_at: datetime | None
+    performed_at: datetime
+    total_sets: int
+    total_volume_kg: float
+    exercises: list[PublishedExercise]
+
+
+class ProfileResponse(BaseModel):
+    profile: ProfileSummary
+    is_self: bool
+    is_following: bool
+    sessions: list[PublishedSession]
+
+
+class PublishRequest(BaseModel):
+    caption: str | None = Field(default=None, max_length=280)
+
+
+class NotificationResponse(BaseModel):
+    id: str
+    kind: str
+    created_at: datetime
+    read_at: datetime | None
+    actor_username: str | None
+    actor_display_name: str | None
+    session_id: str | None
 
 
 # --- programs ---------------------------------------------------------

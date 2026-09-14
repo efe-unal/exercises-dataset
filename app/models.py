@@ -46,6 +46,14 @@ class User(Base):
     language: Mapped[str] = mapped_column(String(8), default="en")
     unit_system: Mapped[str] = mapped_column(String(8), default="metric")
     tier: Mapped[str] = mapped_column(String(16), default="free")
+    # The public handle. Null until the person picks one, and until then they
+    # have no profile at all — an account is fully usable without going
+    # public. Stored lowercase; `username_display` keeps their capitalisation.
+    username: Mapped[str | None] = mapped_column(String(30), unique=True,
+                                                 index=True, default=None)
+    username_display: Mapped[str | None] = mapped_column(String(30),
+                                                         default=None)
+    bio: Mapped[str | None] = mapped_column(String(300), default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                  default=utcnow)
 
@@ -144,6 +152,14 @@ class WorkoutSession(Base):
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None)
     notes: Mapped[str | None] = mapped_column(Text, default=None)
+    # Private unless explicitly published. Nothing a person logs becomes
+    # visible to anyone else by default, and publishing is per session rather
+    # than an account-wide switch.
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None, index=True)
+    # A short line the athlete writes when publishing. Their own words about
+    # their own workout — not a comment thread.
+    caption: Mapped[str | None] = mapped_column(String(280), default=None)
 
     program: Mapped[Program] = relationship(back_populates="sessions")
     sets: Mapped[list["SetLog"]] = relationship(
@@ -193,3 +209,55 @@ class BodyMetric(Base):
     unit: Mapped[str] = mapped_column(String(16))
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                   default=utcnow, index=True)
+
+
+class Follow(Base):
+    """One person following another.
+
+    Following grants no access to anything: it only decides who gets told
+    when a workout is published. Private sessions stay private to followers
+    and strangers alike.
+    """
+
+    __tablename__ = "follows"
+    __table_args__ = (
+        UniqueConstraint("follower_id", "followee_id", name="uq_follow_pair"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    follower_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    followee_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow)
+
+
+class Notification(Base):
+    """Something that happened which a person should be told about.
+
+    Stored rather than pushed so the app can show a list on open. Delivery to
+    a locked phone is a separate concern — see docs/SOCIAL.md.
+    """
+
+    __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notification_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    # Who receives it.
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    # Who caused it. Nullable so a system notice needs no actor.
+    actor_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), default=None)
+    # What it points at. Nullable for the same reason. No foreign key: the
+    # session may be unpublished or deleted later, and the notification
+    # should survive that as a dead link rather than vanish or fail.
+    session_id: Mapped[str | None] = mapped_column(String(32), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
+                                                     default=None)

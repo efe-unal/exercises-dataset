@@ -706,3 +706,49 @@ legend {
   display: flex;
   flex-direction: column;
 }
+
+/* --- profiles and sharing -------------------------------------------- */
+.profile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+}
+
+.bio {
+  margin: 8px 0;
+  color: var(--text-secondary);
+}
+
+.profile-settings {
+  padding-bottom: var(--gap);
+  margin-bottom: var(--gap);
+  border-bottom: 1px solid var(--border);
+}
+
+.publish-dialog .actions {
+  margin-top: var(--gap);
+}
+
+/* The unread badge sits on the tab rather than beside it, so the tab bar
+   keeps its five equal columns at any label length. */
+.tab-with-badge {
+  position: relative;
+}
+
+.tab-badge {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  margin-left: 10px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}

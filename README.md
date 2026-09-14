@@ -44,6 +44,7 @@
 - [Interactive Browser & Developer Setup](#-interactive-browser--developer-setup)
 - [Program Engine](#-program-engine)
 - [App & API](#-app--api)
+- [Sharing & Profiles](#-sharing--profiles)
 - [File Structure](#-file-structure)
 - [Statistics](#-statistics)
 - [Data Schema](#-data-schema)
@@ -171,6 +172,32 @@ interface is translated (English and Turkish so far) and follows the account's
 language preference across devices.
 
 Running it and deploying it: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+---
+
+## 🤝 Sharing & Profiles
+
+Strava's shape rather than Twitter's — and closer still to Spotify's. There is
+no feed and no comment thread: you publish a workout, someone opens your
+profile and sees it, and following you means being told when you publish
+again.
+
+The unit of content is a workout that already happened, which the app produces
+anyway, so nobody is ever asked to author a post. Two rules hold the whole
+thing up: **nothing is public until it is published** — per session, always a
+deliberate act, and following grants no access to anything unpublished — and
+**a handle is the only public identifier**, so a shared link cannot leak an
+email. Training history is health data; private-by-default with per-item
+opt-in is what KVKK and the GDPR ask for, so it is built in rather than added
+later.
+
+The share card (`web/src/lib/shareCard.ts`) is the part that works on day one
+with nobody else signed up: it draws the workout onto a canvas and hands it to
+the phone's share sheet, so it reaches an audience already on WhatsApp and
+Instagram. The handle on the card is the way back.
+
+Design notes, the endpoint table and what is deliberately absent:
+[`docs/SOCIAL.md`](docs/SOCIAL.md).
 
 ---
 

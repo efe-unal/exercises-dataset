@@ -1,7 +1,7 @@
 /** Account preferences, and the sign-out button. */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -24,6 +24,8 @@ export function Settings() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   if (!user) return null;
@@ -47,6 +49,51 @@ export function Settings() {
         {t('settings.signedInAs')}: {user.email}
         {user.tier === 'pro' ? ' · pro' : ''}
       </p>
+
+      <section className="profile-settings">
+        <h3>{t('profile.yourProfile')}</h3>
+        {user.username ? (
+          <>
+            <p className="muted">
+              <Link to={`/@${user.username}`}>@{user.username}</Link>
+            </p>
+            <label>
+              <span>{t('profile.bio')}</span>
+              <input
+                type="text"
+                maxLength={300}
+                defaultValue={user.bio ?? ''}
+                onChange={(event) => setBio(event.target.value)}
+                onBlur={() => bio !== (user.bio ?? '') && void update({ bio })}
+              />
+            </label>
+          </>
+        ) : (
+          <>
+            <p className="muted small">{t('profile.claimUsername')}</p>
+            <label>
+              <span>{t('profile.username')}</span>
+              <input
+                type="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="ayse_lifts"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+              />
+              <small className="muted">{t('share.usernameHint')}</small>
+            </label>
+            <button
+              type="button"
+              className="button"
+              disabled={username.trim().length < 3}
+              onClick={() => void update({ username: username.trim() })}
+            >
+              {t('common.save')}
+            </button>
+          </>
+        )}
+      </section>
 
       <label>
         <span>{t('settings.language')}</span>

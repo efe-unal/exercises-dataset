@@ -22,6 +22,7 @@ import { labelFor, useTranslation, type Translate } from '../lib/i18n';
 import { suggestionText } from '../lib/suggestion';
 import { logSession } from '../lib/offline';
 import { ExerciseMedia } from '../components/ExerciseMedia';
+import { PublishDialog } from '../components/PublishDialog';
 import { RestTimer } from '../components/RestTimer';
 import { SetLogger, type LoggedSet } from '../components/SetLogger';
 import { SwapExercise } from '../components/SwapExercise';
@@ -41,6 +42,9 @@ export function Today() {
   const [swapped, setSwapped] = useState<Record<string, Exercise>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Set once a session is stored, so publishing can be offered as a separate
+  // step. A queued offline session has no id yet and so cannot be published.
+  const [justSaved, setJustSaved] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -109,16 +113,39 @@ export function Today() {
         program_id: program.id,
         week: session.week,
         day_index: session.day_index,
-        day_name: session.day.name,
+        // The athlete's own label for their own record, in their own
+        // language — the same string their profile and share card show.
+        day_name: labelFor(t, 'day', session.day.key, session.day.name),
         sets,
       });
       setMessage(saved ? t('today.sessionSaved') : t('today.savedOffline'));
+      if (saved) {
+        setJustSaved(saved.id);
+        return; // the publish offer replaces the session view
+      }
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }
+  }
+
+  if (justSaved) {
+    return (
+      <PublishDialog
+        sessionId={justSaved}
+        onPublished={() => {
+          setJustSaved(null);
+          setMessage(t('share.published'));
+          void load();
+        }}
+        onDismiss={() => {
+          setJustSaved(null);
+          void load();
+        }}
+      />
+    );
   }
 
   if (status === 'loading') return <p className="muted">{t('common.loading')}</p>;

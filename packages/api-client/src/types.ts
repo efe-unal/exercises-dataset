@@ -189,6 +189,10 @@ export interface User {
   id: string;
   email: string;
   display_name: string | null;
+  /** The public handle. Null until claimed — an account has no profile
+   *  until then, which is what keeps going public an explicit choice. */
+  username: string | null;
+  bio: string | null;
   language: string;
   unit_system: 'metric' | 'imperial';
   tier: 'free' | 'pro';
@@ -221,8 +225,56 @@ export interface LogSessionRequest {
   completed?: boolean;
 }
 
+export interface ProfileSummary {
+  username: string;
+  display_name: string;
+  bio: string | null;
+  followers: number;
+  following: number;
+}
+
+export interface PublishedExercise {
+  exercise_id: string;
+  name: string;
+  sets: number;
+  best_weight_kg: number | null;
+  total_reps: number;
+}
+
+/** A workout its owner chose to make public. Never a raw session row. */
+export interface PublishedSession {
+  id: string;
+  day_name: string;
+  caption: string | null;
+  published_at: string | null;
+  performed_at: string;
+  total_sets: number;
+  total_volume_kg: number;
+  exercises: PublishedExercise[];
+}
+
+export interface ProfileResponse {
+  profile: ProfileSummary;
+  is_self: boolean;
+  is_following: boolean;
+  sessions: PublishedSession[];
+}
+
+export interface AppNotification {
+  id: string;
+  kind: string;
+  created_at: string;
+  read_at: string | null;
+  actor_username: string | null;
+  actor_display_name: string | null;
+  session_id: string | null;
+}
+
 export interface WorkoutSession {
   id: string;
+  /** Set once the owner publishes it; null while private. */
+  published_at?: string | null;
+  caption?: string | null;
   program_id: string;
   week: number;
   day_index: number;

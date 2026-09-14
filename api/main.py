@@ -29,7 +29,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.db import create_all
-from app.routers import accounts, programs, workouts
+from app.routers import accounts, programs, social, workouts
 from engine.catalog import get_catalog, quality_score
 
 from .ratelimit import RateLimitMiddleware
@@ -240,6 +240,7 @@ def _serialize(exercise: dict, language: str) -> dict:
 app.include_router(accounts.router)
 app.include_router(programs.router)
 app.include_router(workouts.router)
+app.include_router(social.router)
 
 
 # --- media ------------------------------------------------------------

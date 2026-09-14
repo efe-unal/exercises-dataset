@@ -18,6 +18,7 @@ from ..auth import (
 )
 from ..db import get_session
 from ..models import User
+from ..social import set_username
 from ..schemas import (
     LoginRequest,
     PasswordResetConfirm,
@@ -97,6 +98,11 @@ def update_me(request: UpdateUserRequest,
     if not changes:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="no fields to update")
+    # A handle goes through validation and a uniqueness check, so it cannot
+    # be set by the plain attribute loop below.
+    username = changes.pop("username", None)
+    if username is not None:
+        set_username(session, user, username)
     for field, value in changes.items():
         setattr(user, field, value)
     session.add(user)
