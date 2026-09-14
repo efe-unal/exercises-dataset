@@ -29,7 +29,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.db import create_all
-from app.routers import accounts, programs, social, workouts
+from app.routers import accounts, admin, programs, push, social, workouts
 from engine.catalog import get_catalog, quality_score
 
 from .ratelimit import RateLimitMiddleware
@@ -42,6 +42,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     create_all()
+    _seed_notification_categories()
     get_catalog()  # warm the catalog so the first request is not slow
     yield
 
@@ -56,6 +57,15 @@ app = FastAPI(
         "backend behind the web and mobile clients. Media " + ATTRIBUTION
     ),
 )
+
+
+def _seed_notification_categories() -> None:
+    """Give every notification category its master-switch row at startup."""
+    from app.db import SessionLocal
+    from app.notify import sync_categories
+
+    with SessionLocal() as session:
+        sync_categories(session)
 
 
 # --- middleware -------------------------------------------------------
@@ -241,6 +251,8 @@ app.include_router(accounts.router)
 app.include_router(programs.router)
 app.include_router(workouts.router)
 app.include_router(social.router)
+app.include_router(push.router)
+app.include_router(admin.router)
 
 
 # --- media ------------------------------------------------------------

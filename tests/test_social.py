@@ -268,7 +268,7 @@ def test_publishing_notifies_followers(client):
 
     notifications = client.get("/v1/notifications", headers=follower).json()
     assert len(notifications) == 1
-    assert notifications[0]["kind"] == "workout_published"
+    assert notifications[0]["kind"] == "social.workout_published"
     assert notifications[0]["actor_username"] == "author1"
     assert notifications[0]["session_id"] == session_id
     assert client.get("/v1/notifications/unread-count",

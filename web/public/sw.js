@@ -122,3 +122,59 @@ async function trim(cache, limit) {
   if (keys.length <= limit) return;
   await Promise.all(keys.slice(0, keys.length - limit).map((key) => cache.delete(key)));
 }
+
+/**
+ * Push notifications.
+ *
+ * The payload is whatever app/notify.py sent: a title, a body, a url to open
+ * and the category it came from. Everything is defensive — a malformed or
+ * empty push must still show something rather than throwing inside the
+ * service worker, where nobody would ever see the error.
+ */
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data ? event.data.text() : '' };
+  }
+
+  const title = payload.title || 'Training';
+  const options = {
+    body: payload.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    // The category is the tag, so a second reminder replaces the first
+    // rather than stacking two of the same thing in the shade.
+    tag: payload.category || 'general',
+    renotify: false,
+    data: { url: payload.url || '/' },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+/**
+ * Tapping a notification opens the screen it is about.
+ *
+ * An already-open tab is focused and navigated rather than duplicated —
+ * opening a second copy of an installed app is disorienting.
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin);
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windows) => {
+        for (const client of windows) {
+          if (new URL(client.url).origin === target.origin && 'focus' in client) {
+            client.navigate(target.href);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(target.href);
+      }),
+  );
+});

@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
+import { NotificationSettings } from '../components/NotificationSettings';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -94,6 +95,15 @@ export function Settings() {
           </>
         )}
       </section>
+
+      <NotificationSettings />
+
+      {/* The operator's own way in; nobody else's account renders it. */}
+      {user.is_admin && (
+        <p className="muted small">
+          <Link to="/operator">{t('admin.title')}</Link>
+        </p>
+      )}
 
       <label>
         <span>{t('settings.language')}</span>

@@ -7,6 +7,8 @@
  */
 
 import type {
+  AdminOverview,
+  AnnouncementResponse,
   AppNotification,
   AuthToken,
   BodyMetric,
@@ -16,11 +18,15 @@ import type {
   Facets,
   LogSessionRequest,
   NextSession,
+  NotificationPreferences,
+  NotificationTypeState,
   Plan,
   ProfileResponse,
   ProfileSummary,
   ProgramRequest,
   PublishedSession,
+  PushConfig,
+  PushSubscriptionPayload,
   ProgramSummary,
   SaveProgramRequest,
   SavedPlan,
@@ -327,6 +333,96 @@ export class ExercisesClient {
   profileUrl(username: string, origin?: string): string {
     const base = origin ?? globalThis.location?.origin ?? this.baseUrl;
     return `${base}/@${encodeURIComponent(username)}`;
+  }
+
+  // --- notifications --------------------------------------------------
+  /** Whether the server can send push at all, and the key to subscribe with. */
+  pushConfig(): Promise<PushConfig> {
+    return this.request<PushConfig>('/v1/push/config');
+  }
+
+  subscribePush(subscription: PushSubscriptionPayload): Promise<void> {
+    return this.request<void>('/v1/push/subscriptions', {
+      method: 'POST',
+      body: subscription,
+      auth: true,
+    });
+  }
+
+  unsubscribePush(subscription: PushSubscriptionPayload): Promise<void> {
+    return this.request<void>('/v1/push/subscriptions', {
+      method: 'DELETE',
+      body: subscription,
+      auth: true,
+    });
+  }
+
+  /** Send one notification to the caller's own devices, to prove it works. */
+  sendTestPush(): Promise<void> {
+    return this.request<void>('/v1/push/test', { method: 'POST', auth: true });
+  }
+
+  notificationPreferences(): Promise<NotificationPreferences> {
+    return this.request<NotificationPreferences>('/v1/push/preferences', {
+      auth: true,
+    });
+  }
+
+  setNotificationPreference(category: string, enabled: boolean): Promise<unknown> {
+    return this.request('/v1/push/preferences', {
+      method: 'PUT',
+      body: { category, enabled },
+      auth: true,
+    });
+  }
+
+  setQuietHours(input: {
+    timezone?: string;
+    quiet_from_hour?: number;
+    quiet_to_hour?: number;
+  }): Promise<unknown> {
+    return this.request('/v1/push/quiet-hours', {
+      method: 'PUT',
+      body: input,
+      auth: true,
+    });
+  }
+
+  // --- operator -------------------------------------------------------
+  adminOverview(): Promise<AdminOverview> {
+    return this.request<AdminOverview>('/v1/admin/overview', { auth: true });
+  }
+
+  adminNotificationTypes(): Promise<NotificationTypeState[]> {
+    return this.request<NotificationTypeState[]>('/v1/admin/notification-types', {
+      auth: true,
+    });
+  }
+
+  adminSetNotificationType(category: string, enabled: boolean): Promise<unknown> {
+    return this.request(
+      `/v1/admin/notification-types/${encodeURIComponent(category)}`,
+      { method: 'PUT', query: { enabled }, auth: true },
+    );
+  }
+
+  adminSendAnnouncement(input: {
+    title: string;
+    body: string;
+    url?: string;
+    audience: 'self' | 'all';
+  }): Promise<AnnouncementResponse> {
+    return this.request<AnnouncementResponse>('/v1/admin/announcements', {
+      method: 'POST',
+      body: input,
+      auth: true,
+    });
+  }
+
+  adminAnnouncements(): Promise<AnnouncementResponse[]> {
+    return this.request<AnnouncementResponse[]>('/v1/admin/announcements', {
+      auth: true,
+    });
   }
 
   // --- catalog --------------------------------------------------------

@@ -37,7 +37,10 @@ RESERVED_USERNAMES = frozenset({
     "terms", "privacy", "security", "contact",
 })
 
-NOTIFY_WORKOUT_PUBLISHED = "workout_published"
+#: The category key, defined in app/notify.py so the preference switch, the
+#: master switch and the stored notification all name the same thing. Two
+#: spellings for one category meant the preference lookup silently failed.
+NOTIFY_WORKOUT_PUBLISHED = "social.workout_published"
 
 # One notification fan-out is bounded so a single publish cannot enqueue an
 # unbounded number of rows. Beyond this the notification is skipped rather
@@ -145,12 +148,22 @@ def _notify_followers(session: Session, actor: User,
         .limit(MAX_NOTIFICATION_FANOUT)))
     if not follower_ids:
         return
-    session.add_all([
-        Notification(user_id=follower_id, kind=NOTIFY_WORKOUT_PUBLISHED,
-                     actor_id=actor.id, session_id=workout.id)
-        for follower_id in follower_ids
-    ])
-    session.commit()
+    # Imported here rather than at module scope: notify imports the models
+    # this module also uses, and a top-level import would be circular.
+    from . import notify as notifications
+
+    followers = session.scalars(
+        select(User).where(User.id.in_(follower_ids)))
+    who = actor.display_name or f"@{actor.username}"
+    for follower in followers:
+        notifications.notify(
+            session, follower, NOTIFY_WORKOUT_PUBLISHED,
+            title=who,
+            body=f"published {workout.day_name}",
+            url=f"/@{actor.username}",
+            actor_id=actor.id,
+            session_id=workout.id,
+        )
 
 
 def published_sessions(session: Session, user: User, limit: int,

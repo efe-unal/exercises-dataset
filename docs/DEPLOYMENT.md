@@ -61,6 +61,38 @@ VITE_API_URL=https://api.example.com npm run build --workspace web
 
 Set `ALLOWED_ORIGINS` on the API to the origin you serve the app from.
 
+## Notifications
+
+Push needs a VAPID key pair, which the deployment generates itself — no
+third-party account and no bill:
+
+```bash
+python -m app.push generate-keys   # prints the four variables to paste in
+```
+
+Keep the private key stable. Changing it invalidates every subscription, and
+every athlete has to allow notifications again — which most will not.
+
+The automatic reminders need a clock. Run the tick hourly; every rule is
+gated on the athlete's own local hour, so hourly is what makes a reminder
+land in the evening they chose:
+
+```
+0 * * * * cd /srv && python -m app.scheduler tick
+```
+
+Every rule is idempotent within its window, so a tick that runs twice, or
+that is missed and catches up late, does not send anything twice.
+
+To reach the operator's page, set `is_admin` on your own row directly:
+
+```sql
+UPDATE users SET is_admin = true WHERE email = 'you@example.com';
+```
+
+Nothing in the product grants that flag. A privilege the app can hand out is
+a privilege an attacker can reach.
+
 ## Schema changes
 
 `create_all()` creates missing tables at startup, which is enough until the
@@ -78,6 +110,12 @@ that point, not after.
   `EMAIL_BACKEND`.
 - **Payments.** Tiers are enforced (`user.tier`), but nothing sets a user to
   `pro` except an admin editing the row.
+- **Marketing consent as a separate record.** Announcements are one
+  category an athlete can switch off, which covers the product case. If
+  announcements ever carry commercial content, check whether Türkiye's İYS
+  regime applies to push — the statute names SMS, email and calls, and its
+  reach over push is not settled. That is a question for a lawyer, not for
+  this file.
 - **A shared rate-limit store.** The limiter counts per process, so with
   several workers the effective limit is multiplied by the worker count. Move
   the counter into Redis before that stops being acceptable.

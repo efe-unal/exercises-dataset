@@ -54,6 +54,14 @@ class User(Base):
     username_display: Mapped[str | None] = mapped_column(String(30),
                                                          default=None)
     bio: Mapped[str | None] = mapped_column(String(300), default=None)
+    # An IANA zone name. Everything time-based reads this: a reminder that
+    # fires at 03:00 local time gets the app deleted, so a wrong or missing
+    # zone must fail safe rather than fire anyway.
+    timezone: Mapped[str] = mapped_column(String(64), default="UTC")
+    # Local hours, inclusive-exclusive, during which nothing is delivered.
+    quiet_from_hour: Mapped[int] = mapped_column(Integer, default=22)
+    quiet_to_hour: Mapped[int] = mapped_column(Integer, default=8)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                  default=utcnow)
 
@@ -261,3 +269,111 @@ class Notification(Base):
                                                  default=utcnow, index=True)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
                                                      default=None)
+
+
+class PushSubscription(Base):
+    """One browser on one device that agreed to receive notifications.
+
+    A person may have several — phone and laptop are separate subscriptions,
+    and each expires independently.
+    """
+
+    __tablename__ = "push_subscriptions"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # The push service's URL for this device. Unique because re-subscribing
+    # the same browser yields the same endpoint, and two rows for one device
+    # would mean two copies of every notification.
+    endpoint: Mapped[str] = mapped_column(String(700), unique=True, index=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    user_agent: Mapped[str | None] = mapped_column(String(300), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow)
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None)
+    # Reset on every success. Push services do not always say a subscription
+    # is dead, so repeated failure is the other way to find out.
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class NotificationSetting(Base):
+    """One person's answer for one category of notification.
+
+    Sparse on purpose: a missing row means "whatever the category's default
+    is", so adding a category later does not need a backfill and does not
+    silently opt everyone in.
+    """
+
+    __tablename__ = "notification_settings"
+    __table_args__ = (
+        UniqueConstraint("user_id", "category", name="uq_setting_category"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    category: Mapped[str] = mapped_column(String(60))
+    enabled: Mapped[bool] = mapped_column(Boolean)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow)
+
+
+class NotificationTypeState(Base):
+    """Whether a category is switched on for the whole product.
+
+    The operator's master switch, above every individual preference. A new
+    category appears in code and is seeded here; turning one off stops it for
+    everyone without a deploy, which is what makes a noisy notification
+    recoverable rather than a mistake shipped to every phone.
+    """
+
+    __tablename__ = "notification_type_state"
+
+    category: Mapped[str] = mapped_column(String(60), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow)
+
+
+class Announcement(Base):
+    """A message the operator wrote, to be delivered to people."""
+
+    __tablename__ = "announcements"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    title: Mapped[str] = mapped_column(String(120))
+    body: Mapped[str] = mapped_column(String(500))
+    url: Mapped[str | None] = mapped_column(String(300), default=None)
+    # "all" or "self" — "self" is the test send, which is how an announcement
+    # gets proofread before it reaches anyone else.
+    audience: Mapped[str] = mapped_column(String(20), default="all")
+    created_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 default=utcnow, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
+                                                     default=None)
+    recipient_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class NotificationLog(Base):
+    """One delivery attempt, kept only long enough to enforce the daily cap.
+
+    Not an audit trail: it exists so a person cannot be sent fifteen
+    notifications in an afternoon by a rule nobody thought to bound.
+    """
+
+    __tablename__ = "notification_log"
+    __table_args__ = (
+        Index("ix_notification_log_user_time", "user_id", "sent_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    category: Mapped[str] = mapped_column(String(60))
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                              default=utcnow)

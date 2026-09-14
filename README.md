@@ -45,6 +45,7 @@
 - [Program Engine](#-program-engine)
 - [App & API](#-app--api)
 - [Sharing & Profiles](#-sharing--profiles)
+- [Notifications](#-notifications)
 - [File Structure](#-file-structure)
 - [Statistics](#-statistics)
 - [Data Schema](#-data-schema)
@@ -198,6 +199,31 @@ Instagram. The handle on the card is the way back.
 
 Design notes, the endpoint table and what is deliberately absent:
 [`docs/SOCIAL.md`](docs/SOCIAL.md).
+
+---
+
+## 🔔 Notifications
+
+Three kinds, deliberately separate: **social** (someone you follow published),
+**automatic** (a training reminder, your block finishing, a deload week, a
+nudge after a quiet spell) and **announcements** the operator writes.
+
+They are separate because push permission is a one-way door. A browser asks
+once, and a refusal can afterwards be undone only in its own settings, which
+nobody does — so every notification spends a budget that cannot be topped up.
+Hence: a switch per category rather than one for everything, quiet hours read
+in the athlete's own timezone, and a daily cap no combination of rules can
+exceed. The nudge that reads as nagging is off unless asked for.
+
+Above every personal preference sits a master switch per category, so a noisy
+rule can be stopped for everyone immediately, without a deploy. Adding a
+category is one entry in `app/notify.py` — no migration, because a missing
+preference means "use this category's default".
+
+Web push needs no third-party account: generate a VAPID key pair once with
+`python -m app.push generate-keys`. The automatic rules run from `python -m
+app.scheduler tick`, hourly. Setup is in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ---
 

@@ -196,6 +196,9 @@ export interface User {
   language: string;
   unit_system: 'metric' | 'imperial';
   tier: 'free' | 'pro';
+  timezone: string;
+  /** Gates the operator's own screens; nothing in the product can set it. */
+  is_admin: boolean;
   created_at: string;
 }
 
@@ -258,6 +261,57 @@ export interface ProfileResponse {
   is_self: boolean;
   is_following: boolean;
   sessions: PublishedSession[];
+}
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+export interface PushConfig {
+  enabled: boolean;
+  public_key: string | null;
+}
+
+export interface NotificationPreference {
+  category: string;
+  label: string;
+  enabled: boolean;
+  /** False when the operator has switched the whole category off. */
+  available: boolean;
+}
+
+export interface NotificationPreferences {
+  categories: NotificationPreference[];
+  timezone: string;
+  quiet_from_hour: number;
+  quiet_to_hour: number;
+  daily_cap: number;
+}
+
+export interface NotificationTypeState {
+  category: string;
+  label: string;
+  enabled: boolean;
+  default_enabled: boolean;
+}
+
+export interface AdminOverview {
+  push_configured: boolean;
+  users: number;
+  registered_devices: number;
+  daily_cap: number;
+}
+
+export interface AnnouncementResponse {
+  id: string;
+  title: string;
+  body: string;
+  url: string | null;
+  audience: string;
+  created_at: string;
+  sent_at: string | null;
+  recipient_count: number;
 }
 
 export interface AppNotification {

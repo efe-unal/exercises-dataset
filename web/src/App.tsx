@@ -19,6 +19,7 @@ import { onUnreadChange, startUnreadPolling } from './lib/notifications';
 import { onPendingChange, pendingCount, startAutoFlush } from './lib/offline';
 import { SignIn, SignUp } from './pages/Auth';
 import { ExerciseDetail } from './pages/ExerciseDetail';
+import { Admin } from './pages/Admin';
 import { Notifications } from './pages/Notifications';
 import { ForgotPassword, ResetPassword } from './pages/PasswordReset';
 import { Profile } from './pages/Profile';
@@ -73,6 +74,10 @@ export function App() {
           <Route
             path="/activity"
             element={<RequireAuth>{<Notifications />}</RequireAuth>}
+          />
+          <Route
+            path="/operator"
+            element={<RequireAuth>{<Admin />}</RequireAuth>}
           />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* Reachable while signed in too: someone following a reset link

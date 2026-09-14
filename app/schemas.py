@@ -44,6 +44,8 @@ class UserResponse(BaseModel):
     display_name: str | None
     username: str | None = None
     bio: str | None = None
+    timezone: str = "UTC"
+    is_admin: bool = False
     language: str
     unit_system: str
     tier: str
@@ -100,6 +102,56 @@ class ProfileResponse(BaseModel):
 
 class PublishRequest(BaseModel):
     caption: str | None = Field(default=None, max_length=280)
+
+
+class PushKeys(BaseModel):
+    p256dh: str = Field(max_length=200)
+    auth: str = Field(max_length=100)
+
+
+class PushSubscriptionRequest(BaseModel):
+    endpoint: str = Field(max_length=700)
+    keys: PushKeys
+
+
+class NotificationPreference(BaseModel):
+    category: str
+    label: str
+    enabled: bool
+    available: bool
+
+
+class PreferenceUpdate(BaseModel):
+    category: str = Field(max_length=60)
+    enabled: bool
+
+
+class QuietHoursUpdate(BaseModel):
+    timezone: str | None = Field(default=None, max_length=64)
+    quiet_from_hour: int | None = Field(default=None, ge=0, le=23)
+    quiet_to_hour: int | None = Field(default=None, ge=0, le=23)
+
+
+class AnnouncementRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    body: str = Field(min_length=1, max_length=500)
+    url: str | None = Field(default=None, max_length=300)
+    # "self" is the test send; it is the default so a mistyped request
+    # cannot reach everyone.
+    audience: Literal["self", "all"] = "self"
+
+
+class AnnouncementResponse(BaseModel):
+    id: str
+    title: str
+    body: str
+    url: str | None
+    audience: str
+    created_at: datetime
+    sent_at: datetime | None
+    recipient_count: int
+
+    model_config = {"from_attributes": True}
 
 
 class NotificationResponse(BaseModel):
