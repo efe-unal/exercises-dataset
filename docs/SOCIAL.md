@@ -72,7 +72,10 @@ labels are translated, so it speaks the athlete's language.
 - **A feed.** A new app's feed is an empty room, which is worse than no feed.
   Profiles and notifications give the same value without the emptiness.
 - **Push to a locked phone.** Notifications are stored and polled while the
-  app is open. Real push needs VAPID keys and a push service configured for
-  the deployment — the same shape of gap as email delivery in
-  [`DEPLOYMENT.md`](DEPLOYMENT.md), and the service worker already has the
-  hook where a `push` handler would go.
+  app is open. Real push is a smaller gap than email delivery, and a
+  different kind: web push runs over the browser vendors' own push services,
+  which are free and need no third-party account — only a VAPID key pair,
+  generated once by the deployment. What is missing is work, not a decision:
+  the key pair, a `push` listener in `web/public/sw.js` (there is none yet),
+  a permission prompt, and a sender on the server. Note that iOS delivers web
+  push only to a PWA the user has added to their home screen (16.4+).
