@@ -5,8 +5,8 @@
  *   VITE_API_URL=https://api.example.com node scripts/build-android.mjs athlete
  *   VITE_API_URL=https://api.example.com node scripts/build-android.mjs operator
  *
- * Then `./gradlew assembleDebug` inside android-<mode>/ makes the APK; the
- * GitHub workflow does both steps.
+ * Then `./gradlew assembleDebug` inside android-<mode>/ makes the APK. See
+ * docs/DEPLOYMENT.md for the whole sequence.
  *
  * VITE_API_URL is required here and optional for the web app. A web page can
  * fall back to its own origin; inside the Android app that origin is the

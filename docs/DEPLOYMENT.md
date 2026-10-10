@@ -70,31 +70,33 @@ The same web app ships as two Android apps, chosen at build time:
 | Athlete (`com.efeunal.training`) | `athlete` | everything except the operator page |
 | Operator (`com.efeunal.training.operator`) | `operator` | sign-in and the operator page only |
 
-The GitHub workflow `.github/workflows/android.yml` builds both on every push
-that touches the app, and on demand from the repository's **Actions** tab. Each
-run leaves `antrenman-athlete.apk` and `antrenman-operator.apk` under the
-run's **Artifacts**. They are debug builds: fine to hand to testers, not
-accepted by the Play Store.
+Both are built on the developer's own machine, with Android Studio (or just
+its SDK and a JDK 21) installed:
+
+```bash
+npm install
+npm run build --workspace @exercises/api-client
+cd web
+VITE_API_URL=https://api.example.com node scripts/build-android.mjs athlete
+(cd android-athlete && ./gradlew assembleDebug)
+VITE_API_URL=https://api.example.com node scripts/build-android.mjs operator
+(cd android-operator && ./gradlew assembleDebug)
+```
+
+Each leaves `app/build/outputs/apk/debug/app-debug.apk` inside its
+`android-<mode>/` folder. With a phone connected over USB and USB debugging on,
+`adb install -r <that file>` installs it directly. These are debug builds: fine
+to hand to testers, not accepted by the Play Store.
 
 Three settings decide whether an APK is usable:
 
-- **The repository variable `API_URL`** — the API's `https://` address. Inside
-  the app the page's own origin is the phone itself, so without it the app
-  cannot find a server; the workflow warns and builds a placeholder that
-  installs but cannot sign anyone in. Plain `http` is refused by Android.
+- **`VITE_API_URL`** — the API's `https://` address. Inside the app the page's
+  own origin is the phone itself, so without it the app cannot find a server,
+  and the build script refuses to run. Plain `http` is refused by Android.
 - **`ALLOWED_ORIGINS` on the API must include `https://localhost`** — the
   origin Android's WebView reports for every request the app makes.
-- **The repository variable `PUBLIC_URL`** (optional) — the public web app,
-  which shared profile links point at. Without it, a shared card names
-  `localhost`.
-
-To build locally instead, with Android Studio installed:
-
-```bash
-cd web
-VITE_API_URL=https://api.example.com node scripts/build-android.mjs athlete
-cd android-athlete && ./gradlew assembleDebug
-```
+- **`VITE_PUBLIC_URL`** (optional) — the public web app, which shared profile
+  links point at. Without it, a shared card names `localhost`.
 
 Not yet in the apps:
 
