@@ -17,6 +17,7 @@ import { useAuth } from './lib/auth';
 import { useTranslation } from './lib/i18n';
 import { onUnreadChange, startUnreadPolling } from './lib/notifications';
 import { onPendingChange, pendingCount, startAutoFlush } from './lib/offline';
+import { APP_MODE } from './lib/platform';
 import { SignIn, SignUp } from './pages/Auth';
 import { ExerciseDetail } from './pages/ExerciseDetail';
 import { Admin } from './pages/Admin';
@@ -31,6 +32,10 @@ import { Settings } from './pages/Settings';
 import { Today } from './pages/Today';
 
 export function App() {
+  return APP_MODE === 'operator' ? <OperatorApp /> : <AthleteApp />;
+}
+
+function AthleteApp() {
   const { user, loading } = useAuth();
   const { t } = useTranslation();
 
@@ -75,10 +80,14 @@ export function App() {
             path="/activity"
             element={<RequireAuth>{<Notifications />}</RequireAuth>}
           />
-          <Route
-            path="/operator"
-            element={<RequireAuth>{<Admin />}</RequireAuth>}
-          />
+          {/* The athlete APK leaves the operator page out altogether; it has
+              an app of its own. */}
+          {APP_MODE === 'all' && (
+            <Route
+              path="/operator"
+              element={<RequireAuth>{<Admin />}</RequireAuth>}
+            />
+          )}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* Reachable while signed in too: someone following a reset link
               on a device that still holds a session must be able to use it. */}
@@ -93,6 +102,38 @@ export function App() {
       </main>
 
       {user && <TabBar />}
+    </div>
+  );
+}
+
+/**
+ * The operator app: one screen behind sign-in. No sign-up, no tabs — the
+ * operator account is made by setting `is_admin` in the database, never here.
+ */
+function OperatorApp() {
+  const { user, loading, signOut } = useAuth();
+  const { t } = useTranslation();
+
+  return (
+    <div className="app">
+      <StatusBanners />
+      <header className="app-header">
+        <span className="brand">{t('admin.title')}</span>
+        {!loading && user && (
+          <button type="button" className="button subtle small" onClick={() => void signOut()}>
+            {t('auth.signOut')}
+          </button>
+        )}
+      </header>
+
+      <main className="app-main">
+        <Routes>
+          <Route path="/sign-in" element={user ? <Navigate to="/" /> : <SignIn />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<RequireAuth>{<Admin />}</RequireAuth>} />
+        </Routes>
+      </main>
     </div>
   );
 }

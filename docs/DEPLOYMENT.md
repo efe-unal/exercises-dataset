@@ -61,6 +61,49 @@ VITE_API_URL=https://api.example.com npm run build --workspace web
 
 Set `ALLOWED_ORIGINS` on the API to the origin you serve the app from.
 
+## The Android apps
+
+The same web app ships as two Android apps, chosen at build time:
+
+| App | Build mode | Contents |
+| --- | --- | --- |
+| Athlete (`com.efeunal.training`) | `athlete` | everything except the operator page |
+| Operator (`com.efeunal.training.operator`) | `operator` | sign-in and the operator page only |
+
+The GitHub workflow `.github/workflows/android.yml` builds both on every push
+that touches the app, and on demand from the repository's **Actions** tab. Each
+run leaves `antrenman-athlete.apk` and `antrenman-operator.apk` under the
+run's **Artifacts**. They are debug builds: fine to hand to testers, not
+accepted by the Play Store.
+
+Three settings decide whether an APK is usable:
+
+- **The repository variable `API_URL`** — the API's `https://` address. Inside
+  the app the page's own origin is the phone itself, so without it the app
+  cannot find a server; the workflow warns and builds a placeholder that
+  installs but cannot sign anyone in. Plain `http` is refused by Android.
+- **`ALLOWED_ORIGINS` on the API must include `https://localhost`** — the
+  origin Android's WebView reports for every request the app makes.
+- **The repository variable `PUBLIC_URL`** (optional) — the public web app,
+  which shared profile links point at. Without it, a shared card names
+  `localhost`.
+
+To build locally instead, with Android Studio installed:
+
+```bash
+cd web
+VITE_API_URL=https://api.example.com node scripts/build-android.mjs athlete
+cd android-athlete && ./gradlew assembleDebug
+```
+
+Not yet in the apps:
+
+- **Push to a closed app.** Web push does not exist inside Android's WebView;
+  native push needs Firebase Cloud Messaging, which means a Google account
+  for the project and a `google-services.json`. Until then, notifications
+  arrive in the in-app list.
+- **Their own icon.** Both show Capacitor's default icon, told apart by name.
+
 ## Notifications
 
 Push needs a VAPID key pair, which the deployment generates itself — no

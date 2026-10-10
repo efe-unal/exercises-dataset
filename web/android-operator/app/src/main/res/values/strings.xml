@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Antrenman Yönetim</string>
+    <string name="title_activity_main">Antrenman Yönetim</string>
+    <string name="package_name">com.efeunal.training.operator</string>
+    <string name="custom_url_scheme">com.efeunal.training.operator</string>
+</resources>

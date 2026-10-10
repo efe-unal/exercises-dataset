@@ -13,6 +13,8 @@ import {
 /**
  * In development Vite proxies `/v1` to the API, so a relative base keeps the
  * browser on one origin. In production set VITE_API_URL to the deployed API.
+ * The Android build refuses to run without it (see `scripts/build-android.mjs`):
+ * there the page's own origin is the phone itself.
  */
 const baseUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
 

@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
+import { APP_MODE } from '../lib/platform';
 
 export function SignIn() {
   return <AuthForm mode="sign-in" />;
@@ -107,6 +108,8 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </p>
       )}
 
+      {/* The operator app has no sign-up: its one account is made by hand. */}
+      {APP_MODE !== 'operator' && (
       <p className="muted">
         {isSignUp ? (
           <>
@@ -118,6 +121,7 @@ function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           </>
         )}
       </p>
+      )}
     </section>
   );
 }

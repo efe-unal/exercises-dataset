@@ -18,10 +18,11 @@ import type {
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
+import { APP_MODE } from '../lib/platform';
 
 export function Admin() {
   const { t } = useTranslation();
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
 
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [types, setTypes] = useState<NotificationTypeState[]>([]);
@@ -43,6 +44,18 @@ export function Admin() {
   }, [user?.is_admin, refresh]);
 
   if (loading) return <p className="muted">{t('common.loading')}</p>;
+  if (!user?.is_admin && APP_MODE === 'operator') {
+    // In the operator app this page is the whole app, so there is no secret
+    // to keep — and "not found" with a back button would loop to itself.
+    return (
+      <section className="panel narrow">
+        <p className="callout">{t('admin.notOperator')}</p>
+        <button type="button" className="button wide" onClick={() => void signOut()}>
+          {t('auth.signOut')}
+        </button>
+      </section>
+    );
+  }
   if (!user?.is_admin) {
     return (
       <section className="panel">

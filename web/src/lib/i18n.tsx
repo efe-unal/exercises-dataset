@@ -297,6 +297,8 @@ const en: Dictionary = {
   'push.category.announcement': 'News about the app',
 
   'admin.title': 'Operator',
+  'admin.notOperator':
+    'This account has no operator access. Sign in with the operator account.',
   'admin.users': 'Accounts',
   'admin.devices': 'Registered devices',
   'admin.pushConfigured': 'Push ready',
@@ -620,6 +622,8 @@ const tr: Dictionary = {
   'push.category.announcement': 'Uygulamadan haberler',
 
   'admin.title': 'Yönetim',
+  'admin.notOperator':
+    'Bu hesabın yönetim yetkisi yok. Yönetici hesabıyla giriş yap.',
   'admin.users': 'Hesap',
   'admin.devices': 'Kayıtlı cihaz',
   'admin.pushConfigured': 'Push hazır',

@@ -14,6 +14,7 @@ import { ApiError } from '@exercises/api-client';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
+import { PUBLIC_ORIGIN } from '../lib/platform';
 import { renderShareCard, shareCard } from '../lib/shareCard';
 
 export function Profile() {
@@ -154,7 +155,7 @@ function PublishedCard({
         exercises: session.exercises,
         username,
         displayName,
-        profileUrl: api.profileUrl(username),
+        profileUrl: api.profileUrl(username, PUBLIC_ORIGIN),
         labels: {
           sets: t('progress.workingSets'),
           volume: t('progress.totalVolume'),
@@ -165,7 +166,7 @@ function PublishedCard({
       });
       const how = await shareCard(blob, {
         username,
-        profileUrl: api.profileUrl(username),
+        profileUrl: api.profileUrl(username, PUBLIC_ORIGIN),
         dayName: session.day_name,
       });
       setMessage(how === 'shared' ? null : t('share.downloaded'));

@@ -11,6 +11,8 @@
  * lets the phone hand the file straight to the share sheet.
  */
 
+import { IS_NATIVE } from './platform';
+
 const WIDTH = 1080;
 const HEIGHT = 1350; // 4:5, the tallest ratio Instagram shows uncropped
 const PADDING = 88;
@@ -157,8 +159,13 @@ export async function shareCard(
   blob: Blob,
   data: { username: string; profileUrl: string; dayName: string },
 ): Promise<'shared' | 'downloaded'> {
-  const file = new File([blob], `workout-${data.username}.png`,
-                        { type: 'image/png' });
+  const fileName = `workout-${data.username}.png`;
+
+  // Android's WebView has neither the Web Share API nor downloads, so inside
+  // the app both routes below would silently do nothing.
+  if (IS_NATIVE) return shareNatively(blob, fileName, data);
+
+  const file = new File([blob], fileName, { type: 'image/png' });
 
   const canShareFiles =
     typeof navigator !== 'undefined' &&
@@ -188,6 +195,46 @@ export async function shareCard(
   link.click();
   URL.revokeObjectURL(url);
   return 'downloaded';
+}
+
+/**
+ * The Android route: write the card to the app's cache, then hand the file to
+ * the system share sheet. The cache is the right place — Android clears it
+ * on its own, and no storage permission is needed.
+ */
+async function shareNatively(
+  blob: Blob,
+  fileName: string,
+  data: { profileUrl: string; dayName: string },
+): Promise<'shared'> {
+  const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+    import('@capacitor/filesystem'),
+    import('@capacitor/share'),
+  ]);
+  const { uri } = await Filesystem.writeFile({
+    path: fileName,
+    data: await blobToBase64(blob),
+    directory: Directory.Cache,
+  });
+  try {
+    await Share.share({ files: [uri], text: `${data.dayName} — ${data.profileUrl}` });
+  } catch (error) {
+    // Closing the share sheet rejects too, and is not a failure.
+    if (!(error instanceof Error && /cancel/i.test(error.message))) throw error;
+  }
+  return 'shared';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // A data URL: everything after the comma is the base64 payload.
+      resolve(String(reader.result).split(',', 2)[1] ?? '');
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 // --- drawing helpers --------------------------------------------------
